@@ -111,10 +111,6 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
     d_sizes = DefaultDict(Int,Int,()->0)
     maxid = zero(UInt32)
     aff_threshold = parse(Float64, ARGS[3])
-    mid_val = [parse(Float64, ARGS[1]), parse(Float64, ARGS[2])]
-    weight_x = parse(Float64, ARGS[1])
-    weight_y = parse(Float64, ARGS[2])
-    #itp = interpolate(([0,mid_val[1], 1],), [0,mid_val[2],1], Gridded(Linear()))
     f1 = open("rg_volume.in","w")
     f2 = open("sv_size.in","w")
     for z=one(Int32):zdim::Int32
@@ -136,8 +132,8 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
               if !haskey(edges,p)
                   edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
-              edges[p].area += weight_x
-              edges[p].sum_affinity += aff[x,y,z,1]*weight_x
+              edges[p].area += 1
+              edges[p].sum_affinity += aff[x,y,z,1]
               edges[p].boundaries[1][coord] = aff[x,y,z,1]
             end
             if ( (y > 1) && seg[x,y-1,z]!=0 && seg[x,y,z]!=seg[x,y-1,z])
@@ -148,8 +144,8 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
               if !haskey(edges,p)
                   edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
-              edges[p].area += weight_y
-              edges[p].sum_affinity += aff[x,y,z,2]*weight_y
+              edges[p].area += 1
+              edges[p].sum_affinity += aff[x,y,z,2]
               edges[p].boundaries[2][coord] = aff[x,y,z,2]
             end
             if ( (z > 1) && seg[x,y,z-1]!=0 && seg[x,y,z]!=seg[x,y,z-1])
@@ -162,7 +158,6 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
                   edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
               edges[p].area += 1
-              #edges[p].sum_affinity += aff[x,y,z,3]*(2-aff[x,y,z,3])
               edges[p].sum_affinity += aff[x,y,z,3]
               edges[p].boundaries[3][coord] = aff[x,y,z,3]
             end
@@ -205,7 +200,7 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
     close(f1)
     close(f2)
 end
-f = h5open(ARGS[4])
+f = h5open(ARGS[1])
 #aff = f["affinityMap"]
 aff = f["main"]
 if ismmappable(aff)
@@ -215,7 +210,7 @@ else
 end
 close(f)
 
-f = h5open(ARGS[5])
+f = h5open(ARGS[2])
 seg = f["main"]
 if ismmappable(seg)
     seg = readmmap(seg)
