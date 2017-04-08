@@ -138,9 +138,6 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
             end
             if ( (y > 1) && seg[x,y-1,z]!=0 && seg[x,y,z]!=seg[x,y-1,z])
               p = minmax(seg[x,y,z], seg[x,y-1,z])
-              #if p[1] == 5817 && p[2] == 6025
-              #    println("$p (y): $(aff[x,y,z,2])")
-              #end
               if !haskey(edges,p)
                   edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
@@ -150,10 +147,6 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
             end
             if ( (z > 1) && seg[x,y,z-1]!=0 && seg[x,y,z]!=seg[x,y,z-1])
               p = minmax(seg[x,y,z], seg[x,y,z-1])
-              #if p[1] == 5817 && p[2] == 6025
-              #if p[1] == 10265 && p[2] == 10698
-              #    println("$p (z): $(aff[x,y,z,3])")
-              #end
               if !haskey(edges,p)
                   edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
@@ -179,9 +172,6 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
                 sum_area += w_area
             end
             sum_affinity *= edges[p].area/sum_area
-            if p[1] == 55841 && p[2] == 56655
-                println("$sum_affinity, $sum_area")
-            end
             if sum_area > 20
                 push!(cc_mean, sum_affinity)
             end
@@ -191,8 +181,6 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
         else
             write(f1,"$(p[1]) $(p[2]) $(Float64(edges[p].sum_affinity)) $(edges[p].area) $(p[1]) $(p[2]) $(Float64(edges[p].sum_affinity)) $(edges[p].area)\n")
         end
-        #write(f1,"$(p[1]) $(p[2]) $(Float64(edges[p].sum_affinity)) $(edges[p].area) $(p[1]) $(p[2]) $(Float64(edges[p].sum_affinity)) $(edges[p].area)\n")
-        #write(f1,"$(p[1]) $(p[2]) $(sum_affinity) $(edges[p].area) $(p[1]) $(p[2]) $(sum_affinity) $(edges[p].area)\n")
     end
     for p in keys(d_sizes)
         write(f2,"$p $(d_sizes[p])\n")
