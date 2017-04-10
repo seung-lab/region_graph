@@ -108,27 +108,25 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
     println(typeof(xdim))
     edges=Dict{Tuple{Ts,Ts},MeanEdge{Ta}}()
     idset = Set{UInt32}()
-    d_sizes = DefaultDict(Int,Int,()->0)
     maxid = zero(UInt32)
     aff_threshold = parse(Float64, ARGS[3])
     f1 = open("rg_volume.in","w")
-    f2 = open("sv_size.in","w")
+    boundary_edges = Set{Tuple{Ts,Ts}}()
     for z=one(Int32):zdim::Int32
       #println("processing z: $z")
       for y=one(Int32):ydim::Int32
         for x=one(Int32):xdim::Int32
           if seg[x,y,z]!=0   # ignore background voxels
             coord = (x::Int32,y::Int32,z::Int32)
-            d_sizes[seg[x,y,z]] += 1
             push!(idset,seg[x,y,z])
             if maxid < seg[x,y,z]
                 maxid = seg[x,y,z]
             end
             if ( (x > 1) && seg[x-1,y,z]!=0 && seg[x,y,z]!=seg[x-1,y,z])
               p = minmax(seg[x,y,z], seg[x-1,y,z])
-              #if p[1] == 5817 && p[2] == 6025
-              #    println("$p (x): $(aff[x,y,z,1])")
-              #end
+              if x == 1 || y == 1 || z == 1 || x == xdim || y == ydim || z == zdim
+                  push!(boundary_edges, p)
+              end
               if !haskey(edges,p)
                   edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
@@ -138,6 +136,9 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
             end
             if ( (y > 1) && seg[x,y-1,z]!=0 && seg[x,y,z]!=seg[x,y-1,z])
               p = minmax(seg[x,y,z], seg[x,y-1,z])
+              if x == 1 || y == 1 || z == 1 || x == xdim || y == ydim || z == zdim
+                  push!(boundary_edges, p)
+              end
               if !haskey(edges,p)
                   edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
@@ -147,6 +148,9 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
             end
             if ( (z > 1) && seg[x,y,z-1]!=0 && seg[x,y,z]!=seg[x,y,z-1])
               p = minmax(seg[x,y,z], seg[x,y,z-1])
+              if x == 1 || y == 1 || z == 1 || x == xdim || y == ydim || z == zdim
+                  push!(boundary_edges, p)
+              end
               if !haskey(edges,p)
                   edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
@@ -160,10 +164,23 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
     end
     println("Calculating connect components")
     write(f1,"$maxid $(size(collect(idset))[1]+1) $(size(collect(edges))[1])\n")
+
+    count_edges = 0
     for p in keys(edges)
         cc_sets = connect_component(union(Set(keys(edges[p].boundaries[1])),Set(keys(edges[p].boundaries[2])),Set(keys(edges[p].boundaries[3]))))
         cc_mean = Ta[]
         push!(cc_sets, union(Set(keys(edges[p].boundaries[1])),Set(keys(edges[p].boundaries[2])),Set(keys(edges[p].boundaries[3]))))
+        if p in boundary_edges
+            open("$(p[1])_$(p[2]).txt", "w") do f
+                for i in 1:3
+                    for k in keys(edges[p].boundaries[i])
+                        write(f, "$i $(k[1]) $(k[2]) $(k[3]) $(edges[p].boundaries[i][k])\n")
+                    end
+                end
+            end
+            count_edges+=1
+            continue
+        end
         for cc in cc_sets
             sum_area, sum_affinity = calculate_mean_affinity(edges[p].boundaries, cc)
             for i in 1:3
@@ -182,11 +199,7 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
             write(f1,"$(p[1]) $(p[2]) $(Float64(edges[p].sum_affinity)) $(edges[p].area) $(p[1]) $(p[2]) $(Float64(edges[p].sum_affinity)) $(edges[p].area)\n")
         end
     end
-    for p in keys(d_sizes)
-        write(f2,"$p $(d_sizes[p])\n")
-    end
     close(f1)
-    close(f2)
 end
 f = h5open(ARGS[1])
 #aff = f["affinityMap"]
