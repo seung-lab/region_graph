@@ -200,6 +200,12 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
         end
     end
     close(f1)
+    println("boundary segments: $(length(boundary_edges)), edges: $(count_edges)")
+    open("incomplete_edges.txt", "w") do f
+        for p in boundary_edges
+            write(f, "$(p[1]) $(p[2])\n")
+        end
+    end
 end
 f = h5open(ARGS[1])
 #aff = f["affinityMap"]
