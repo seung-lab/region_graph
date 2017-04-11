@@ -177,6 +177,58 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
         end
       end
     end
+
+    if !real_x_boundary
+      x = xend+one(Int32)
+      println("process 1 voxel overlapping yz face")
+      for z=zstart:zend::Int32
+        for y=ystart:yend::Int32
+          if seg[x,y,z]==0   # ignore background voxels
+              continue
+          end
+          coord = (x::Int32,y::Int32,z::Int32)
+          if (seg[x-1,y,z]!=0 && seg[x,y,z]!=seg[x-1,y,z])
+            p = minmax(seg[x,y,z], seg[x-1,y,z])
+            if y == ystart || z == zstart || y == yend || z == zend
+                push!(boundary_edges, p)
+            end
+            if !haskey(edges,p)
+                edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
+            end
+            edges[p].area += 1
+            edges[p].sum_affinity += aff[x,y,z,1]
+            edges[p].boundaries[1][coord] = aff[x,y,z,1]
+          end
+        end
+      end
+    end
+
+    if !real_y_boundary
+      y = yend+one(Int32)
+      println("process 1 voxel overlapping xz face")
+      for z=zstart:zend::Int32
+        for x=xstart:xend::Int32
+          if seg[x,y,z]==0   # ignore background voxels
+              continue
+          end
+          coord = (x::Int32,y::Int32,z::Int32)
+          if (seg[x,y-1,z]!=0 && seg[x,y,z]!=seg[x,y-1,z])
+            p = minmax(seg[x,y,z], seg[x,y-1,z])
+            if x == xstart || z == zstart || x == xend || z == zend
+                push!(boundary_edges, p)
+            end
+            if !haskey(edges,p)
+                edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
+            end
+            edges[p].area += 1
+            edges[p].sum_affinity += aff[x,y,z,2]
+            edges[p].boundaries[2][coord] = aff[x,y,z,2]
+          end
+        end
+      end
+    end
+
+
     println("Calculating connect components")
     write(f1,"$maxid $(size(collect(idset))[1]+1) $(size(collect(edges))[1])\n")
 
