@@ -103,6 +103,29 @@ function reweight_affinity{Ta}(boundary::Dict{Tuple{Int32,Int32,Int32}, Ta}, bou
     return weighted_aff, weighted_area
 end
 
+function process_edge(p, edges)
+    cc_sets = connect_component(union(Set(keys(edges[p].boundaries[1])),Set(keys(edges[p].boundaries[2])),Set(keys(edges[p].boundaries[3]))))
+    cc_mean = Float32[]
+    push!(cc_sets, union(Set(keys(edges[p].boundaries[1])),Set(keys(edges[p].boundaries[2])),Set(keys(edges[p].boundaries[3]))))
+    for cc in cc_sets
+        sum_area, sum_affinity = calculate_mean_affinity(edges[p].boundaries, cc)
+        for i in 1:3
+            w_affinity, w_area = reweight_affinity(edges[p].boundaries[i], cc, i, aff_threshold)
+            sum_affinity += w_affinity
+            sum_area += w_area
+        end
+        sum_affinity *= edges[p].area/sum_area
+        if sum_area > 20
+            push!(cc_mean, sum_affinity)
+        end
+    end
+    if length(cc_mean) > 0
+        return "$(p[1]) $(p[2]) $(Float64(edges[p].sum_affinity)) $(edges[p].area) $(p[1]) $(p[2]) $(maximum(cc_mean)) $(edges[p].area)\n"
+    else
+        return "$(p[1]) $(p[2]) $(Float64(edges[p].sum_affinity)) $(edges[p].area) $(p[1]) $(p[2]) $(Float64(edges[p].sum_affinity)) $(edges[p].area)\n"
+    end
+end
+
 function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int32,1})
     (xstart::Int32,ystart::Int32,zstart::Int32)=offset
     (xend::Int32,yend::Int32,zend::Int32)=offset.+chunk_size
@@ -124,7 +147,6 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
     edges=Dict{Tuple{Ts,Ts},MeanEdge{Ta}}()
     idset = Set{UInt32}()
     maxid = zero(UInt32)
-    aff_threshold = parse(Float64, ARGS[3])
     f1 = open("rg_volume_$(xstart)_$(ystart)_$(zstart).in","w")
     boundary_edges = Set{Tuple{Ts,Ts}}()
     for z=zstart:zend::Int32
@@ -245,26 +267,8 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
             count_edges+=1
             continue
         end
-        cc_sets = connect_component(union(Set(keys(edges[p].boundaries[1])),Set(keys(edges[p].boundaries[2])),Set(keys(edges[p].boundaries[3]))))
-        cc_mean = Ta[]
-        push!(cc_sets, union(Set(keys(edges[p].boundaries[1])),Set(keys(edges[p].boundaries[2])),Set(keys(edges[p].boundaries[3]))))
-        for cc in cc_sets
-            sum_area, sum_affinity = calculate_mean_affinity(edges[p].boundaries, cc)
-            for i in 1:3
-                w_affinity, w_area = reweight_affinity(edges[p].boundaries[i], cc, i, aff_threshold)
-                sum_affinity += w_affinity
-                sum_area += w_area
-            end
-            sum_affinity *= edges[p].area/sum_area
-            if sum_area > 20
-                push!(cc_mean, sum_affinity)
-            end
-        end
-        if length(cc_mean) > 0
-            write(f1,"$(p[1]) $(p[2]) $(Float64(edges[p].sum_affinity)) $(edges[p].area) $(p[1]) $(p[2]) $(maximum(cc_mean)) $(edges[p].area)\n")
-        else
-            write(f1,"$(p[1]) $(p[2]) $(Float64(edges[p].sum_affinity)) $(edges[p].area) $(p[1]) $(p[2]) $(Float64(edges[p].sum_affinity)) $(edges[p].area)\n")
-        end
+        write(f1, process_edge(p,edges))
+
     end
     close(f1)
     println("boundary segments: $(length(boundary_edges)), edges: $(count_edges)")
@@ -292,6 +296,8 @@ else
     seg = Segmentation(read(seg))
 end
 close(f)
+
+aff_threshold = parse(Float64, ARGS[3])
 
 data_size = Int32[2048, 2048, 256]
 chunk_size = Int32[1024, 1024, 128]
