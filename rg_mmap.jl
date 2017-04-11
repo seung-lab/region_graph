@@ -125,7 +125,7 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
     idset = Set{UInt32}()
     maxid = zero(UInt32)
     aff_threshold = parse(Float64, ARGS[3])
-    f1 = open("rg_volume.in","w")
+    f1 = open("rg_volume_$(xstart)_$(ystart)_$(zstart).in","w")
     boundary_edges = Set{Tuple{Ts,Ts}}()
     for z=zstart:zend::Int32
       #println("processing z: $z")
