@@ -103,28 +103,43 @@ function reweight_affinity{Ta}(boundary::Dict{Tuple{Int32,Int32,Int32}, Ta}, bou
     return weighted_aff, weighted_area
 end
 
-function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
-    (xdim::Int32,ydim::Int32,zdim::Int32)=size(seg)
-    println(typeof(xdim))
+function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int32,1})
+    (xstart::Int32,ystart::Int32,zstart::Int32)=offset
+    (xend::Int32,yend::Int32,zend::Int32)=offset.+chunk_size
+
+    real_x_boundary = false
+    real_y_boundary = false
+    if xend >= data_size[1]
+        real_x_boundary = true
+        xend = data_size[1]
+    end
+    if yend >= data_size[2]
+        real_y_boundary = true
+        yend = data_size[2]
+    end
+
+    println("$xstart, $ystart, $zstart")
+    println("$xend, $yend, $zend")
+
     edges=Dict{Tuple{Ts,Ts},MeanEdge{Ta}}()
     idset = Set{UInt32}()
     maxid = zero(UInt32)
     aff_threshold = parse(Float64, ARGS[3])
     f1 = open("rg_volume.in","w")
     boundary_edges = Set{Tuple{Ts,Ts}}()
-    for z=one(Int32):zdim::Int32
+    for z=zstart:zend::Int32
       #println("processing z: $z")
-      for y=one(Int32):ydim::Int32
-        for x=one(Int32):xdim::Int32
+      for y=ystart:yend::Int32
+        for x=xstart:xend::Int32
           if seg[x,y,z]!=0   # ignore background voxels
             coord = (x::Int32,y::Int32,z::Int32)
             push!(idset,seg[x,y,z])
             if maxid < seg[x,y,z]
                 maxid = seg[x,y,z]
             end
-            if ( (x > 1) && seg[x-1,y,z]!=0 && seg[x,y,z]!=seg[x-1,y,z])
+            if ( (x > xstart) && seg[x-1,y,z]!=0 && seg[x,y,z]!=seg[x-1,y,z])
               p = minmax(seg[x,y,z], seg[x-1,y,z])
-              if x == 1 || y == 1 || z == 1 || x == xdim || y == ydim || z == zdim
+              if y == ystart || z == zstart || y == yend || z == zend
                   push!(boundary_edges, p)
               end
               if !haskey(edges,p)
@@ -134,9 +149,9 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
               edges[p].sum_affinity += aff[x,y,z,1]
               edges[p].boundaries[1][coord] = aff[x,y,z,1]
             end
-            if ( (y > 1) && seg[x,y-1,z]!=0 && seg[x,y,z]!=seg[x,y-1,z])
+            if ( (y > ystart) && seg[x,y-1,z]!=0 && seg[x,y,z]!=seg[x,y-1,z])
               p = minmax(seg[x,y,z], seg[x,y-1,z])
-              if x == 1 || y == 1 || z == 1 || x == xdim || y == ydim || z == zdim
+              if x == xstart || z == zstart || x == xend || z == zend
                   push!(boundary_edges, p)
               end
               if !haskey(edges,p)
@@ -146,9 +161,9 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
               edges[p].sum_affinity += aff[x,y,z,2]
               edges[p].boundaries[2][coord] = aff[x,y,z,2]
             end
-            if ( (z > 1) && seg[x,y,z-1]!=0 && seg[x,y,z]!=seg[x,y,z-1])
+            if ( (z > zstart) && seg[x,y,z-1]!=0 && seg[x,y,z]!=seg[x,y,z-1])
               p = minmax(seg[x,y,z], seg[x,y,z-1])
-              if x == 1 || y == 1 || z == 1 || x == xdim || y == ydim || z == zdim
+              if x == xstart || y == ystart || x == xend || y == yend
                   push!(boundary_edges, p)
               end
               if !haskey(edges,p)
@@ -171,7 +186,7 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
         cc_mean = Ta[]
         push!(cc_sets, union(Set(keys(edges[p].boundaries[1])),Set(keys(edges[p].boundaries[2])),Set(keys(edges[p].boundaries[3]))))
         if p in boundary_edges
-            open("$(p[1])_$(p[2]).txt", "w") do f
+            open("$(p[1])_$(p[2])_$(xstart)_$(ystart)_$(zstart).txt", "w") do f
                 for i in 1:3
                     for k in keys(edges[p].boundaries[i])
                         write(f, "$i $(k[1]) $(k[2]) $(k[3]) $(edges[p].boundaries[i][k])\n")
@@ -201,7 +216,7 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
     end
     close(f1)
     println("boundary segments: $(length(boundary_edges)), edges: $(count_edges)")
-    open("incomplete_edges.txt", "w") do f
+    open("incomplete_edges_$(xstart)_$(ystart)_$(zstart).txt", "w") do f
         for p in boundary_edges
             write(f, "$(p[1]) $(p[2])\n")
         end
@@ -226,4 +241,9 @@ else
 end
 close(f)
 
-@time regiongraph(aff,seg)
+data_size = Int32[2048, 2048, 256]
+chunk_size = Int32[1024, 1024, 128]
+index = Int32[1,0,0]
+offset = chunk_size.*index+1
+println(offset)
+@time regiongraph(aff,seg,offset)
