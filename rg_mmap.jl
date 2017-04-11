@@ -6,7 +6,7 @@ include("mean_edge.jl")
 
 function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int32,1})
     (xstart::Int32,ystart::Int32,zstart::Int32)=offset
-    (xend::Int32,yend::Int32,zend::Int32)=offset.+chunk_size
+    (xend::Int32,yend::Int32,zend::Int32)=offset.+chunk_size-1
 
     real_x_boundary = false
     real_y_boundary = false
