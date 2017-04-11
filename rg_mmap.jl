@@ -234,9 +234,6 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
 
     count_edges = 0
     for p in keys(edges)
-        cc_sets = connect_component(union(Set(keys(edges[p].boundaries[1])),Set(keys(edges[p].boundaries[2])),Set(keys(edges[p].boundaries[3]))))
-        cc_mean = Ta[]
-        push!(cc_sets, union(Set(keys(edges[p].boundaries[1])),Set(keys(edges[p].boundaries[2])),Set(keys(edges[p].boundaries[3]))))
         if p in boundary_edges
             open("$(p[1])_$(p[2])_$(xstart)_$(ystart)_$(zstart).txt", "w") do f
                 for i in 1:3
@@ -248,6 +245,9 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
             count_edges+=1
             continue
         end
+        cc_sets = connect_component(union(Set(keys(edges[p].boundaries[1])),Set(keys(edges[p].boundaries[2])),Set(keys(edges[p].boundaries[3]))))
+        cc_mean = Ta[]
+        push!(cc_sets, union(Set(keys(edges[p].boundaries[1])),Set(keys(edges[p].boundaries[2])),Set(keys(edges[p].boundaries[3]))))
         for cc in cc_sets
             sum_area, sum_affinity = calculate_mean_affinity(edges[p].boundaries, cc)
             for i in 1:3
