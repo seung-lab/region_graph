@@ -117,9 +117,9 @@ function process_edge(p, edge)
         end
     end
     if length(cc_mean) > 0
-        return "$(p[1]) $(p[2]) $(Float64(edge.sum_affinity)) $(edge.area) $(p[1]) $(p[2]) $(maximum(cc_mean)) $(edge.area)\n"
+        return "$(p[1]) $(p[2]) $(Float64(edge.sum_affinity)) $(Float64(edge.area)) $(p[1]) $(p[2]) $(Float64(maximum(cc_mean))) $(Float64(edge.area))\n"
     else
-        return "$(p[1]) $(p[2]) $(Float64(edge.sum_affinity)) $(edge.area) $(p[1]) $(p[2]) $(Float64(edge.sum_affinity)) $(edge.area)\n"
+        return "$(p[1]) $(p[2]) $(Float64(edge.sum_affinity)) $(Float64(edge.area)) $(p[1]) $(p[2]) $(Float64(edge.sum_affinity)) $(Float64(edge.area))\n"
     end
 end
 

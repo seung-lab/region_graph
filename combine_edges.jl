@@ -6,7 +6,7 @@ function load_voxels(fn, edge)
             data = split(ln, " ")
             i = parse(Int, data[1])
             x,y,z = [parse(Int32,x) for x in data[2:4]]
-            aff = parse(Float32, data[5])
+            aff = parse(Float64, data[5])
             coord = (x::Int32,y::Int32,z::Int32)
             edge.area += 1
             edge.sum_affinity += aff
