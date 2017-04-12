@@ -17,18 +17,21 @@ end
 
 function create_edges{Ts, Ta}(seg1::Ts, seg2::Ts, data_type::Ta)
     p = minmax(seg1, seg2)
-    edges=Dict{Tuple{Ts,Ts},MeanEdge{Float32}}()
-    edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
+    edge = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
     re = Regex("^$(seg1)_$(seg2)_\\d+_\\d+_\\d+.txt")
     for fn in filter(x->ismatch(re,x), readdir("."))
-        load_voxels(fn,edges[p])
+        load_voxels(fn,edge)
     end
-    open("edges/$(seg1)_$(seg2)_entry.txt", "w") do f
-        write(f, process_edge(p, edges))
-    end
+    return process_edge(p, edge)
 end
 
 aff_threshold = parse(Float64, ARGS[1])
-seg1 = parse(Int64, ARGS[2])
-seg2 = parse(Int64, ARGS[3])
-create_edges(seg1, seg2, zero(Float32))
+
+open(ARGS[2]) do fin
+open(ARGS[3],"w") do fout
+    for ln in eachline(fin)
+        seg1, seg2 = [parse(Int64, x) for x in split(ln, " ")]
+        write(fout, create_edges(seg1, seg2, zero(Float32)))
+    end
+end
+end

@@ -145,7 +145,7 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
             count_edges+=1
             continue
         end
-        write(f1, process_edge(p,edges))
+        write(f1, process_edge(p,edges[p]))
 
     end
     close(f1)
