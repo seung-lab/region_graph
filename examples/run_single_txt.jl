@@ -67,8 +67,8 @@ function main()
 
     aff_threshold = parse(Float32, ARGS[3])
 
-    data_size = Int32[1024, 1024, 128]
-    chunk_size = Int32[1024, 1024, 128]
+    data_size = Int32[2048, 2048, 256]
+    chunk_size = Int32[1024, 1024, 256]
     #chunk_size = Int32[2048, 2048, 256]
     for i in 0:1
         for j in 0:1
