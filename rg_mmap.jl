@@ -119,9 +119,8 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
       end
     end
 
-
     println("Calculating connect components")
-    write(f1,"$maxid $(size(collect(idset))[1]+1) $(size(collect(edges))[1])\n")
+    #write(f1,"$maxid $(size(collect(idset))[1]+1) $(size(collect(edges))[1])\n")
 
     count_edges = 0
     for p in keys(edges)
