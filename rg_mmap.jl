@@ -2,6 +2,7 @@ using HDF5
 using EMIRT
 using Interpolations
 
+include("constants.jl")
 include("mean_edge.jl")
 
 function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int32,1})
@@ -166,11 +167,6 @@ else
 end
 close(f)
 
-aff_threshold = parse(Float64, ARGS[3])
-
-data_size = Int32[2048, 2048, 256]
-chunk_size = Int32[1024, 1024, 256]
-#chunk_size = Int32[2048, 2048, 256]
 for i in 0:1
     for j in 0:1
         index = Int32[i,j,0]

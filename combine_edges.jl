@@ -1,3 +1,4 @@
+include("constants.jl")
 include("mean_edge.jl")
 
 function load_voxels(fn, edge)
@@ -25,10 +26,8 @@ function create_edges{Ts, Ta}(seg1::Ts, seg2::Ts, data_type::Ta)
     return process_edge(p, edge)
 end
 
-aff_threshold = parse(Float64, ARGS[1])
-
-open(ARGS[2]) do fin
-open(ARGS[3],"w") do fout
+open(ARGS[1]) do fin
+open(ARGS[2],"w") do fout
     for ln in eachline(fin)
         seg1, seg2 = [parse(Int64, x) for x in split(ln, " ")]
         write(fout, create_edges(seg1, seg2, zero(Float32)))

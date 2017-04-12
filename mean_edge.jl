@@ -55,7 +55,7 @@ function calculate_mean_affinity{Ta}(boundaries::Array{Dict{Tuple{Int32,Int32,In
     return sum, num
 end
 
-function reweight_affinity{Ta}(boundary::Dict{Tuple{Int32,Int32,Int32}, Ta}, boundary_cc::Set{Tuple{Int32,Int32,Int32}}, i::Int, aff_threshold::Float64)
+function reweight_affinity{Ta}(boundary::Dict{Tuple{Int32,Int32,Int32}, Ta}, boundary_cc::Set{Tuple{Int32,Int32,Int32}}, i::Int, aff_threshold::Float32)
     weighted_aff = 0
     weighted_area = 0
     visited = Set{Tuple{Int32,Int32,Int32}}()
