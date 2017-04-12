@@ -1,4 +1,4 @@
-include("mean_edge.jl")
+using RegionGraph
 
 function load_voxels(fn, edge)
     open(fn) do f
