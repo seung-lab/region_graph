@@ -27,11 +27,15 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
     maxid = zero(UInt32)
     f1 = open("rg_volume_$(xstart)_$(ystart)_$(zstart).in","w")
     boundary_edges = Set{Tuple{Ts,Ts}}()
+    incomplete_segments = Set{Ts}()
     for z=zstart:zend::Int32
       #println("processing z: $z")
       for y=ystart:yend::Int32
         for x=xstart:xend::Int32
           if seg[x,y,z]!=0   # ignore background voxels
+            if x == xstart || y == ystart || x == xend || y == yend
+                push!(incomplete_segments, seg[x,y,z])
+            end
             coord = (x::Int32,y::Int32,z::Int32)
             push!(idset,seg[x,y,z])
             if maxid < seg[x,y,z]
@@ -39,9 +43,6 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
             end
             if ( (x > xstart) && seg[x-1,y,z]!=0 && seg[x,y,z]!=seg[x-1,y,z])
               p = minmax(seg[x,y,z], seg[x-1,y,z])
-              if y == ystart || z == zstart || y == yend || z == zend
-                  push!(boundary_edges, p)
-              end
               if !haskey(edges,p)
                   edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
@@ -51,9 +52,6 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
             end
             if ( (y > ystart) && seg[x,y-1,z]!=0 && seg[x,y,z]!=seg[x,y-1,z])
               p = minmax(seg[x,y,z], seg[x,y-1,z])
-              if x == xstart || z == zstart || x == xend || z == zend
-                  push!(boundary_edges, p)
-              end
               if !haskey(edges,p)
                   edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
@@ -63,9 +61,6 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
             end
             if ( (z > zstart) && seg[x,y,z-1]!=0 && seg[x,y,z]!=seg[x,y,z-1])
               p = minmax(seg[x,y,z], seg[x,y,z-1])
-              if x == xstart || y == ystart || x == xend || y == yend
-                  push!(boundary_edges, p)
-              end
               if !haskey(edges,p)
                   edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
@@ -86,12 +81,12 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
           if seg[x,y,z]==0   # ignore background voxels
               continue
           end
+          if x == xstart || y == ystart || x == xend || y == yend
+              push!(incomplete_segments, seg[x,y,z])
+          end
           coord = (x::Int32,y::Int32,z::Int32)
           if (seg[x-1,y,z]!=0 && seg[x,y,z]!=seg[x-1,y,z])
             p = minmax(seg[x,y,z], seg[x-1,y,z])
-            if y == ystart || z == zstart || y == yend || z == zend
-                push!(boundary_edges, p)
-            end
             if !haskey(edges,p)
                 edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
             end
@@ -111,12 +106,12 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
           if seg[x,y,z]==0   # ignore background voxels
               continue
           end
+          if x == xstart || y == ystart || x == xend || y == yend
+              push!(incomplete_segments, seg[x,y,z])
+          end
           coord = (x::Int32,y::Int32,z::Int32)
           if (seg[x,y-1,z]!=0 && seg[x,y,z]!=seg[x,y-1,z])
             p = minmax(seg[x,y,z], seg[x,y-1,z])
-            if x == xstart || z == zstart || x == xend || z == zend
-                push!(boundary_edges, p)
-            end
             if !haskey(edges,p)
                 edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
             end
@@ -134,7 +129,8 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
 
     count_edges = 0
     for p in keys(edges)
-        if p in boundary_edges
+        if p[1] in incomplete_segments && p[2] in incomplete_segments
+            push!(boundary_edges, p)
             open("$(p[1])_$(p[2])_$(xstart)_$(ystart)_$(zstart).txt", "w") do f
                 for i in 1:3
                     for k in keys(edges[p].boundaries[i])
