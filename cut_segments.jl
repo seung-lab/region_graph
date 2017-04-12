@@ -27,13 +27,13 @@ end
 
 include("constants.jl")
 index = [parse(Int32, x) for x in ARGS[3:end]]
-offset = chunk_size.*index
+offset = data_start.+chunk_size.*index
 margin = [0,0,0]
 
-aff_start=[max(data_start[i], data_start[i]+offset[i]) for i in 1:3]
-aff_end=[min(data_end[i], data_start[i]+offset[i]+chunk_size[i]) for i in 1:3]
-seg_start=[max(data_start[i], data_start[i]+offset[i]-margin[i]) for i in 1:3]
-seg_end=[min(data_end[i], data_start[i]+offset[i]+chunk_size[i]+margin[i]) for i in 1:3]
+aff_start=[max(data_start[i], offset[i]) for i in 1:3]
+aff_end=[min(data_end[i], offset[i]+chunk_size[i]) for i in 1:3]
+seg_start=[max(data_start[i], offset[i]-margin[i]) for i in 1:3]
+seg_end=[min(data_end[i], offset[i]+chunk_size[i]+margin[i]) for i in 1:3]
 
 println("aff_start: $aff_start")
 println("aff_end: $aff_end")
