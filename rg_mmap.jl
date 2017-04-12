@@ -134,7 +134,7 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
             open("$(p[1])_$(p[2])_$(xstart)_$(ystart)_$(zstart).txt", "w") do f
                 for i in 1:3
                     for k in keys(edges[p].boundaries[i])
-                        write(f, "$i $(k[1]) $(k[2]) $(k[3]) $(edges[p].boundaries[i][k])\n")
+                        write(f, "$i $(k[1]) $(k[2]) $(k[3]) $(Float64(edges[p].boundaries[i][k]))\n")
                     end
                 end
             end
