@@ -4,8 +4,8 @@ using HDF5
 using EMIRT
 using RegionGraph
 
-function write_txt{Ta,Ts}(edges::Dict{Tuple{Ts,Ts},MeanEdge{Ta}},incomplete_segments::Set{Ts},aff_threshold::Ta,startIndex::Array{Int32,1})
-    (xstart::Int32,ystart::Int32,zstart::Int32)=startIndex
+function write_txt{Ta,Ts}(edges::Dict{Tuple{Ts,Ts},MeanEdge{Ta}},incomplete_segments::Set{Ts},aff_threshold::Ta,offset::Array{Int32,1})
+    (xstart::Int32,ystart::Int32,zstart::Int32)=offset
 
     println("Calculating connect components")
     complete_edge_file = open("rg_volume_$(xstart)_$(ystart)_$(zstart).in","w")
@@ -19,7 +19,7 @@ function write_txt{Ta,Ts}(edges::Dict{Tuple{Ts,Ts},MeanEdge{Ta}},incomplete_segm
             open("$(p[1])_$(p[2])_$(xstart)_$(ystart)_$(zstart).txt", "w") do incomplete_edge_file
                 for i in 1:3
                     for k in keys(edge.boundaries[i])
-                        write(incomplete_edge_file, "$i $(k[1]) $(k[2]) $(k[3]) $(Float64(edge.boundaries[i][k]))\n")
+                        write(incomplete_edge_file, "$i $(k[1]+xstart) $(k[2] + +ystart) $(k[3]+zstart) $(Float64(edge.boundaries[i][k]))\n")
                     end
                 end
             end
@@ -67,29 +67,33 @@ function main()
 
     aff_threshold = parse(Float32, ARGS[3])
 
-    data_size = Int32[2048, 2048, 256]
-    chunk_size = Int32[1024, 1024, 256]
+    println("begin run");
+    data_size = Int32[1024, 1024, 128]
+    chunk_size = Int32[512, 512, 128]
     #chunk_size = Int32[2048, 2048, 256]
-    for i in 0:1
-        for j in 0:1
-            index = Int32[i,j,0]
-            startIndex = chunk_size.*index+1
-            endIndex = startIndex.+chunk_size-1
-            println(startIndex)
+    dilation_size = Int32[1,1,0]
+    z = 1
+    for x in 1:chunk_size[1]:data_size[1]
+        for y in 1:chunk_size[2]:data_size[2]
+            global_offset = Int32[x, y, 1].-1 # -1 because julia
+            end_index = global_offset.+chunk_size.+dilation_size
 
-            real_x_boundary = false
-            real_y_boundary = false
-            if endIndex[1] >= data_size[1]
-                real_x_boundary = true
-                endIndex[1] = data_size[1]
+            if end_index[1] >= data_size[1]
+                end_index[1] = data_size[1]
             end
-            if endIndex[2] >= data_size[2]
-                real_y_boundary = true
-                endIndex[2] = data_size[2]
+            if end_index[2] >= data_size[2]
+                end_index[2] = data_size[2]
             end
 
-            @time edges, incomplete_segments = enumerate_edges(aff,seg,startIndex,endIndex,real_x_boundary,real_y_boundary)
-            @time write_txt(edges,incomplete_segments,aff_threshold,startIndex)
+            println(global_offset)
+            println(end_index)
+
+            aff_view = aff[x:end_index[1],y:end_index[2],z:end_index[3],:]
+            seg_view = seg[x:end_index[1],y:end_index[2],z:end_index[3]]
+
+            @time edges, incomplete_segments = enumerate_edges(aff_view,seg_view)
+            @time write_txt(edges,incomplete_segments,aff_threshold,global_offset)
+
         end
     end
 end
