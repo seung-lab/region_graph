@@ -81,9 +81,7 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
           if seg[x,y,z]==0   # ignore background voxels
               continue
           end
-          if x == xstart || y == ystart || x == xend || y == yend
-              push!(incomplete_segments, seg[x,y,z])
-          end
+          push!(incomplete_segments, seg[x,y,z])
           coord = (x::Int32,y::Int32,z::Int32)
           if (seg[x-1,y,z]!=0 && seg[x,y,z]!=seg[x-1,y,z])
             p = minmax(seg[x,y,z], seg[x-1,y,z])
@@ -106,9 +104,7 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
           if seg[x,y,z]==0   # ignore background voxels
               continue
           end
-          if x == xstart || y == ystart || x == xend || y == yend
-              push!(incomplete_segments, seg[x,y,z])
-          end
+          push!(incomplete_segments, seg[x,y,z])
           coord = (x::Int32,y::Int32,z::Int32)
           if (seg[x,y-1,z]!=0 && seg[x,y,z]!=seg[x,y-1,z])
             p = minmax(seg[x,y,z], seg[x,y-1,z])
