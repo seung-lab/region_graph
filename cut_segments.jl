@@ -43,8 +43,8 @@ println("seg_end: $seg_end")
 aff = get_aff(ARGS[1])[aff_start[1]:aff_end[1], aff_start[2]:aff_end[2], aff_start[3]:aff_end[3], 1:3]
 seg_extra = get_seg(ARGS[2])[seg_start[1]:seg_end[1], seg_start[2]:seg_end[2], seg_start[3]:seg_end[3]]
 
-cut_before = min(margin, seg_start - data_start)
-cut_after = min(margin, data_end - seg_end)
+cut_before = min(margin, aff_start - data_start)
+cut_after = min(margin, data_end - aff_end)
 
 println("cut_before: $cut_before")
 println("cut_after: $cut_after")
