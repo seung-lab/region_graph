@@ -6,18 +6,19 @@ include("constants.jl")
 include("mean_edge.jl")
 
 function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int32,1})
-    (xstart::Int32,ystart::Int32,zstart::Int32)=offset
-    (xend::Int32,yend::Int32,zend::Int32)=offset.+chunk_size-1
+    (xstart::Int32,ystart::Int32,zstart::Int32)=Int32[1,1,1]
+    #(xend::Int32,yend::Int32,zend::Int32)=offset.+chunk_size-1
+    (xend::Int32,yend::Int32,zend::Int32)=collect(size(seg)).-Int32[1,1,0]
 
     real_x_boundary = false
     real_y_boundary = false
-    if xend >= data_size[1]
+    if offset[1]+chunk_size[1]-1 >= data_end[1]
         real_x_boundary = true
-        xend = data_size[1]
+        xend += 1
     end
-    if yend >= data_size[2]
+    if offset[2]+chunk_size[2]-1 >= data_end[2]
         real_y_boundary = true
-        yend = data_size[2]
+        yend += 1
     end
 
     println("$xstart, $ystart, $zstart")
@@ -130,7 +131,7 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
             open("$(p[1])_$(p[2])_$(xstart)_$(ystart)_$(zstart).txt", "w") do f
                 for i in 1:3
                     for k in keys(edges[p].boundaries[i])
-                        write(f, "$i $(k[1]) $(k[2]) $(k[3]) $(Float64(edges[p].boundaries[i][k]))\n")
+                        write(f, "$i $(k[1]+offset[1]-1) $(k[2]+offset[2]-1) $(k[3]+offset[3]-1) $(Float64(edges[p].boundaries[i][k]))\n")
                     end
                 end
             end
