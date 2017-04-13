@@ -27,7 +27,7 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
     edges=Dict{Tuple{Ts,Ts},MeanEdge{Ta}}()
     idset = Set{UInt32}()
     maxid = zero(UInt32)
-    f1 = open("rg_volume_$(xstart)_$(ystart)_$(zstart).in","w")
+    f1 = open("rg_volume_$(index[1])_$(index[2])_$(index[3]).in","w")
     boundary_edges = Set{Tuple{Ts,Ts}}()
     incomplete_segments = Set{Ts}()
     for z=zstart:zend::Int32
@@ -128,7 +128,7 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
     for p in keys(edges)
         if p[1] in incomplete_segments && p[2] in incomplete_segments
             push!(boundary_edges, p)
-            open("$(p[1])_$(p[2])_$(xstart)_$(ystart)_$(zstart).txt", "w") do f
+            open("$(p[1])_$(p[2])_$(index[1])_$(index[2])_$(index[3]).txt", "w") do f
                 for i in 1:3
                     for k in keys(edges[p].boundaries[i])
                         write(f, "$i $(k[1]+offset[1]-1) $(k[2]+offset[2]-1) $(k[3]+offset[3]-1) $(Float64(edges[p].boundaries[i][k]))\n")
@@ -143,7 +143,7 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
     end
     close(f1)
     println("boundary segments: $(length(boundary_edges)), edges: $(count_edges)")
-    open("incomplete_edges_$(xstart)_$(ystart)_$(zstart).txt", "w") do f
+    open("incomplete_edges_$(index[1])_$(index[2])_$(index[3]).txt", "w") do f
         for p in boundary_edges
             write(f, "$(p[1]) $(p[2])\n")
         end
