@@ -149,7 +149,10 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
         end
     end
 end
-f = h5open(ARGS[1])
+
+index = [parse(Int32, x) for x in ARGS[3:end]]
+
+f = h5open("$(ARGS[1])_$(index[1])_$(index[2])_$(index[3]).h5")
 #aff = f["affinityMap"]
 aff = f["main"]
 if ismmappable(aff)
@@ -159,7 +162,7 @@ else
 end
 close(f)
 
-f = h5open(ARGS[2])
+f = h5open("$(ARGS[2])_$(index[1])_$(index[2])_$(index[3]).h5")
 seg = f["main"]
 if ismmappable(seg)
     seg = readmmap(seg)
@@ -168,11 +171,6 @@ else
 end
 close(f)
 
-for i in 0:1
-    for j in 0:1
-        index = Int32[i,j,0]
-        offset = chunk_size.*index+1
-        println(offset)
-        @time regiongraph(aff,seg,offset)
-    end
-end
+offset = data_start.+chunk_size.*index
+println(offset)
+@time regiongraph(aff,seg,offset)
