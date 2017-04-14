@@ -16,11 +16,11 @@ function load_voxels(fn, edge)
     end
 end
 
-function create_edges{Ts, Ta}(seg1::Ts, seg2::Ts, data_type::Ta)
+function create_edges{Ts, Ta}(seg1::Ts, seg2::Ts, data, data_type::Ta)
     p = minmax(seg1, seg2)
     edge = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
-    re = Regex("^$(seg1)_$(seg2)_\\d+_\\d+_\\d+.txt")
-    for fn in filter(x->ismatch(re,x), readdir("."))
+    for s in data
+        fn = "$(seg1)_$(seg2)_$(s).txt"
         load_voxels(fn,edge)
     end
     return process_edge(p, edge)
@@ -29,8 +29,9 @@ end
 open(ARGS[1]) do fin
 open(ARGS[2],"w") do fout
     for ln in eachline(fin)
-        seg1, seg2 = [parse(Int64, x) for x in split(ln, " ")]
-        write(fout, create_edges(seg1, seg2, zero(Float32)))
+        data = split(strip(ln), " ")
+        seg1, seg2 = [parse(Int32, x) for x in data[1:2]]
+        write(fout, create_edges(seg1, seg2, data[3:end], zero(Float32)))
     end
 end
 end
