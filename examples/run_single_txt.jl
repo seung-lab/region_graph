@@ -19,7 +19,7 @@ function write_txt{Ta,Ts}(edges::Dict{Tuple{Ts,Ts},MeanEdge{Ta}},incomplete_segm
             open("$(p[1])_$(p[2])_$(xstart)_$(ystart)_$(zstart).txt", "w") do incomplete_edge_file
                 for i in 1:3
                     for k in keys(edge.boundaries[i])
-                        write(incomplete_edge_file, "$i $(k[1]+xstart) $(k[2] + +ystart) $(k[3]+zstart) $(Float64(edge.boundaries[i][k]))\n")
+                        write(incomplete_edge_file, "$i $(k[1]+xstart) $(k[2]+ystart) $(k[3]+zstart) $(Float64(edge.boundaries[i][k]))\n")
                     end
                 end
             end
