@@ -1,10 +1,71 @@
+module RegionGraph
+
 using DataStructures
+
+export Edge, MeanEdge, enumerate_edges, calculate_mean_affinity, calculate_mean_affinity_pluses, reweight_affinity, connect_component
 
 abstract Edge
 type MeanEdge{Ta} <: Edge
     area::Float64
     sum_affinity::Ta
     boundaries::Array{Dict{Tuple{Int32,Int32,Int32}, Ta},1}
+end
+
+function enumerate_edges{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
+    (xstart::Int32,ystart::Int32,zstart::Int32)=(1,1,1)
+    (xend::Int32,yend::Int32,zend::Int32,_)=size(aff)
+    
+    edges=Dict{Tuple{Ts,Ts},MeanEdge{Ta}}()
+    boundary_edges = Set{Tuple{Ts,Ts}}()
+    incomplete_segments = Set{Ts}()
+    for z=zstart:zend::Int32
+      #println("processing z: $z")
+      for y=ystart:yend::Int32
+        for x=xstart:xend::Int32
+          if seg[x,y,z]!=0   # ignore background voxels
+            isIncomplete = x == xstart || y == ystart || x == xend || y == yend
+            if isIncomplete
+                push!(incomplete_segments, seg[x,y,z])
+            end
+            coord = (x::Int32,y::Int32,z::Int32)
+            if ( (x > xstart) && seg[x-1,y,z]!=0 && seg[x,y,z]!=seg[x-1,y,z])
+              p = minmax(seg[x,y,z], seg[x-1,y,z])
+              if !haskey(edges,p)
+                  edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
+              end
+              edges[p].boundaries[1][coord] = aff[x,y,z,1]
+              if !isIncomplete
+                edges[p].area += 1
+                edges[p].sum_affinity += aff[x,y,z,1]
+              end
+            end
+            if ( (y > ystart) && seg[x,y-1,z]!=0 && seg[x,y,z]!=seg[x,y-1,z])
+              p = minmax(seg[x,y,z], seg[x,y-1,z])
+              if !haskey(edges,p)
+                  edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
+              end
+              edges[p].boundaries[2][coord] = aff[x,y,z,2]
+              if !isIncomplete
+                edges[p].area += 1
+                edges[p].sum_affinity += aff[x,y,z,2]
+              end
+            end
+            if ( (z > zstart) && seg[x,y,z-1]!=0 && seg[x,y,z]!=seg[x,y,z-1])
+              p = minmax(seg[x,y,z], seg[x,y,z-1])
+              if !haskey(edges,p)
+                  edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
+              end
+              edges[p].boundaries[3][coord] = aff[x,y,z,3]
+              if !isIncomplete
+                edges[p].area += 1
+                edges[p].sum_affinity += aff[x,y,z,3]
+              end
+            end
+          end
+        end
+      end
+    end
+    return edges, incomplete_segments
 end
 
 function connect_component(boundary::Set{Tuple{Int32,Int32,Int32}})
@@ -55,7 +116,7 @@ function calculate_mean_affinity{Ta}(boundaries::Array{Dict{Tuple{Int32,Int32,In
     return sum, num
 end
 
-function reweight_affinity{Ta}(boundary::Dict{Tuple{Int32,Int32,Int32}, Ta}, boundary_cc::Set{Tuple{Int32,Int32,Int32}}, i::Int, aff_threshold::Float64)
+function reweight_affinity{Ta}(boundary::Dict{Tuple{Int32,Int32,Int32}, Ta}, boundary_cc::Set{Tuple{Int32,Int32,Int32}}, i::Int, aff_threshold::Ta)
     weighted_aff = 0
     weighted_area = 0
     visited = Set{Tuple{Int32,Int32,Int32}}()
@@ -100,9 +161,9 @@ function reweight_affinity{Ta}(boundary::Dict{Tuple{Int32,Int32,Int32}, Ta}, bou
     return weighted_aff, weighted_area
 end
 
-function process_edge(p, edge)
+function calculate_mean_affinity_pluses{Ta, Ts}(p::Tuple{Ts, Ts}, edge::MeanEdge{Ta}, aff_threshold::Ta)
     cc_sets = connect_component(union(Set(keys(edge.boundaries[1])),Set(keys(edge.boundaries[2])),Set(keys(edge.boundaries[3]))))
-    cc_mean = Float32[]
+    cc_means = Float32[]
     push!(cc_sets, union(Set(keys(edge.boundaries[1])),Set(keys(edge.boundaries[2])),Set(keys(edge.boundaries[3]))))
     for cc in cc_sets
         sum_area, sum_affinity = calculate_mean_affinity(edge.boundaries, cc)
@@ -113,13 +174,11 @@ function process_edge(p, edge)
         end
         sum_affinity *= edge.area/sum_area
         if sum_area > 20
-            push!(cc_mean, sum_affinity)
+            push!(cc_means, sum_affinity)
         end
     end
-    if length(cc_mean) > 0
-        return "$(p[1]) $(p[2]) $(Float64(edge.sum_affinity)) $(edge.area) $(p[1]) $(p[2]) $(maximum(cc_mean)) $(edge.area)\n"
-    else
-        return "$(p[1]) $(p[2]) $(Float64(edge.sum_affinity)) $(edge.area) $(p[1]) $(p[2]) $(Float64(edge.sum_affinity)) $(edge.area)\n"
-    end
+    return cc_means
 end
+
+end # module RegionGraph
 

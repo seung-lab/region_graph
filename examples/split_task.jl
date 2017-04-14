@@ -10,7 +10,7 @@ for fn in filter(x->ismatch(r"incomplete_edges_\d+_\d+_\d+.txt",x), readdir(".")
     println("$(length(edges)) edges to process")
 end
 
-nprocess = 8
+nprocess = 1
 chunksize = div(length(edges), nprocess)+1
 count = 0
 idx = 0
