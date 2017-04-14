@@ -4,6 +4,8 @@ using DataStructures
 
 export Edge, MeanEdge, enumerate_edges, calculate_mean_affinity, calculate_mean_affinity_pluses, reweight_affinity, connect_component
 
+__precompile__()
+
 abstract Edge
 type MeanEdge{Ta} <: Edge
     area::Float64
