@@ -37,14 +37,14 @@ println("cut_before: $cut_before")
 println("cut_after: $cut_after")
 
 if ARGS[1] == "aff"
-    aff = get_aff(ARGS[1])[aff_start[1]:aff_end[1], aff_start[2]:aff_end[2], aff_start[3]:aff_end[3], 1:3]
+    aff = get_aff()[aff_start[1]:aff_end[1], aff_start[2]:aff_end[2], aff_start[3]:aff_end[3], 1:3]
     f = h5open("aff_chunk_$(index[1])_$(index[2])_$(index[3]).h5", "w")
     f["main", "chunk", (256,256,64,3), "blosc", 3] = aff
     close(f)
 end
 
 if ARGS[1] == "seg"
-    seg_extra = get_seg(ARGS[2])[seg_start[1]:seg_end[1], seg_start[2]:seg_end[2], seg_start[3]:seg_end[3]]
+    seg_extra = get_seg()[seg_start[1]:seg_end[1], seg_start[2]:seg_end[2], seg_start[3]:seg_end[3]]
     f = h5open("seg_chunk_$(index[1])_$(index[2])_$(index[3]).h5", "w")
     f["main", "chunk", (256,256,64), "blosc", 3] = seg_extra[1+cut_before[1]:end-cut_after[1], 1+cut_before[2]:end-cut_after[2],1+cut_before[3]:end-cut_after[3]]
     close(f)
