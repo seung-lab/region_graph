@@ -23,7 +23,8 @@ function enumerate_edges{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
       for y=ystart:yend::Int32
         for x=xstart:xend::Int32
           if seg[x,y,z]!=0   # ignore background voxels
-            if x == xstart || y == ystart || x == xend || y == yend
+            isIncomplete = x == xstart || y == ystart || x == xend || y == yend
+            if isIncomplete
                 push!(incomplete_segments, seg[x,y,z])
             end
             coord = (x::Int32,y::Int32,z::Int32)
@@ -32,27 +33,33 @@ function enumerate_edges{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
               if !haskey(edges,p)
                   edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
-              edges[p].area += 1
-              edges[p].sum_affinity += aff[x,y,z,1]
               edges[p].boundaries[1][coord] = aff[x,y,z,1]
+              if !isIncomplete
+                edges[p].area += 1
+                edges[p].sum_affinity += aff[x,y,z,1]
+              end
             end
             if ( (y > ystart) && seg[x,y-1,z]!=0 && seg[x,y,z]!=seg[x,y-1,z])
               p = minmax(seg[x,y,z], seg[x,y-1,z])
               if !haskey(edges,p)
                   edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
-              edges[p].area += 1
-              edges[p].sum_affinity += aff[x,y,z,2]
               edges[p].boundaries[2][coord] = aff[x,y,z,2]
+              if !isIncomplete
+                edges[p].area += 1
+                edges[p].sum_affinity += aff[x,y,z,2]
+              end
             end
             if ( (z > zstart) && seg[x,y,z-1]!=0 && seg[x,y,z]!=seg[x,y,z-1])
               p = minmax(seg[x,y,z], seg[x,y,z-1])
               if !haskey(edges,p)
                   edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
-              edges[p].area += 1
-              edges[p].sum_affinity += aff[x,y,z,3]
               edges[p].boundaries[3][coord] = aff[x,y,z,3]
+              if !isIncomplete
+                edges[p].area += 1
+                edges[p].sum_affinity += aff[x,y,z,3]
+              end
             end
           end
         end

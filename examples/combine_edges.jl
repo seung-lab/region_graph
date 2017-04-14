@@ -9,8 +9,6 @@ function load_voxels(fn, edge)
             x,y,z = [parse(Int32,x) for x in data[2:4]]
             aff = parse(Float32, data[5])
             coord = (x::Int32,y::Int32,z::Int32)
-            edge.area += 1
-            edge.sum_affinity += aff
             edge.boundaries[i][coord] = aff
         end
     end
@@ -23,6 +21,11 @@ function create_edges{Ts, Ta}(seg1::Ts, seg2::Ts, aff_threshold::Ta)
     for fn in filter(x->ismatch(re,x), readdir("."))
         load_voxels(fn,edge)
     end
+
+    total_boundaries = union(Set(keys(edge.boundaries[1])),Set(keys(edge.boundaries[2])),Set(keys(edge.boundaries[3])))
+    area, sum_affinity = calculate_mean_affinity(edge.boundaries, total_boundaries)
+    edge.sum_affinity = sum_affinity
+    edge.area = area
 
     cc_means = calculate_mean_affinity_pluses(p, edge, aff_threshold)
 

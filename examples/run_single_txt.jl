@@ -26,7 +26,11 @@ function write_txt{Ta,Ts}(edges::Dict{Tuple{Ts,Ts},MeanEdge{Ta}},incomplete_segm
             count_edges+=1
             continue
         end
-
+            
+        total_boundaries = union(Set(keys(edge.boundaries[1])),Set(keys(edge.boundaries[2])),Set(keys(edge.boundaries[3])))
+        area, sum_affinity = calculate_mean_affinity(edge.boundaries, total_boundaries)
+        edge.sum_affinity = sum_affinity
+        edge.area = area
         cc_means = calculate_mean_affinity_pluses(p, edge, aff_threshold)
 
         if length(cc_means) > 0
@@ -68,8 +72,8 @@ function main()
     aff_threshold = parse(Float32, ARGS[3])
 
     println("begin run");
-    data_size = Int32[1024, 1024, 128]
-    chunk_size = Int32[512, 512, 128]
+    data_size = Int32[768, 768, 128]
+    chunk_size = Int32[256, 256, 128]
     #chunk_size = Int32[2048, 2048, 256]
     dilation_size = Int32[1,1,0]
     z = 1
