@@ -5,8 +5,10 @@ using DataStructures
 export Edge, MeanEdge, enumerate_edges, calculate_mean_affinity, calculate_mean_affinity_pluses, reweight_affinity, connect_component
 
 abstract Edge
-type MeanEdge{Ta} <: Edge
-    area::Float64
+type MeanEdge{Ts,Ta} <: Edge
+    seg_id_1::Ts
+    seg_id_2::Ts
+    area::Float32
     sum_affinity::Ta
     boundaries::Array{Dict{Tuple{Int32,Int32,Int32}, Ta},1}
 end
@@ -15,7 +17,7 @@ function enumerate_edges{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
     (xstart::Int32,ystart::Int32,zstart::Int32)=(1,1,1)
     (xend::Int32,yend::Int32,zend::Int32,_)=size(aff)
     
-    edges=Dict{Tuple{Ts,Ts},MeanEdge{Ta}}()
+    edges=Dict{Tuple{Ts,Ts},MeanEdge{Ts,Ta}}()
     boundary_edges = Set{Tuple{Ts,Ts}}()
     incomplete_segments = Set{Ts}()
     for z=zstart:zend::Int32
@@ -31,7 +33,7 @@ function enumerate_edges{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
             if ( (x > xstart) && seg[x-1,y,z]!=0 && seg[x,y,z]!=seg[x-1,y,z])
               p = minmax(seg[x,y,z], seg[x-1,y,z])
               if !haskey(edges,p)
-                  edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
+                  edges[p] = MeanEdge{Ts,Ta}(p[1], p[2], zero(Float32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
               edges[p].boundaries[1][coord] = aff[x,y,z,1]
               if !isIncomplete
@@ -42,7 +44,7 @@ function enumerate_edges{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
             if ( (y > ystart) && seg[x,y-1,z]!=0 && seg[x,y,z]!=seg[x,y-1,z])
               p = minmax(seg[x,y,z], seg[x,y-1,z])
               if !haskey(edges,p)
-                  edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
+                  edges[p] = MeanEdge{Ts,Ta}(p[1], p[2], zero(Float32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
               edges[p].boundaries[2][coord] = aff[x,y,z,2]
               if !isIncomplete
@@ -53,7 +55,7 @@ function enumerate_edges{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3})
             if ( (z > zstart) && seg[x,y,z-1]!=0 && seg[x,y,z]!=seg[x,y,z-1])
               p = minmax(seg[x,y,z], seg[x,y,z-1])
               if !haskey(edges,p)
-                  edges[p] = MeanEdge{Ta}(zero(UInt32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
+                  edges[p] = MeanEdge{Ts,Ta}(p[1], p[2], zero(Float32),zero(Ta),Dict{Tuple{Int32,Int32,Int32}, Ta}[Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}(),Dict{Tuple{Int32,Int32,Int32}, Ta}()])
               end
               edges[p].boundaries[3][coord] = aff[x,y,z,3]
               if !isIncomplete
@@ -161,7 +163,7 @@ function reweight_affinity{Ta}(boundary::Dict{Tuple{Int32,Int32,Int32}, Ta}, bou
     return weighted_aff, weighted_area
 end
 
-function calculate_mean_affinity_pluses{Ta, Ts}(p::Tuple{Ts, Ts}, edge::MeanEdge{Ta}, aff_threshold::Ta)
+function calculate_mean_affinity_pluses{Ta, Ts}(p::Tuple{Ts, Ts}, edge::MeanEdge{Ts,Ta}, aff_threshold::Ta)
     cc_sets = connect_component(union(Set(keys(edge.boundaries[1])),Set(keys(edge.boundaries[2])),Set(keys(edge.boundaries[3]))))
     cc_means = Float32[]
     push!(cc_sets, union(Set(keys(edge.boundaries[1])),Set(keys(edge.boundaries[2])),Set(keys(edge.boundaries[3]))))
