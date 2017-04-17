@@ -7,26 +7,6 @@ using RegionGraph
 using RegionGraphS3Lambda
 aws = AWSCore.aws_config()
 
-function get_data{Ta,Ts}(p::Tuple{Ts, Ts}, edge::MeanEdge{Ta},
-                         aff_threshold::Ta, num::Int, num2::Int)
-
-    affinity_calculation_time = now() # Bench
-    total_boundaries = union(Set(keys(edge.boundaries[1])),Set(keys(edge.boundaries[2])),Set(keys(edge.boundaries[3])))
-    area, sum_affinity = calculate_mean_affinity(edge.boundaries, total_boundaries)
-    edge.sum_affinity = sum_affinity
-    edge.area = area
-
-    cc_means = calculate_mean_affinity_pluses(p, edge, aff_threshold)
-
-    if length(cc_means) > 0
-        data = "$(p[1]) $(p[2]) $(Float64(edge.sum_affinity)) $(edge.area) $(p[1]) $(p[2]) $(maximum(cc_means)) $(edge.area)\n"
-    else
-        data = "$(p[1]) $(p[2]) $(Float64(edge.sum_affinity)) $(edge.area) $(p[1]) $(p[2]) $(Float64(edge.sum_affinity)) $(edge.area)\n"
-    end
-    println("$p\t$num\t$num2\t$(now() - affinity_calculation_time)")
-    return data
-end
-
 # get the keys ahead of time so we don't have to pay for additional query
 # overhead
 create_edge_lambda = @lambda aws function create_edge_jl(seg_1::Int64,
@@ -63,17 +43,18 @@ end
 
 println("Processing $(length(pairs)) edges via lambda")
 
-num_processed = 0
+num_edges_processed = 0
 sum_single_elapsed_time = 0
+aff_threshold = Float32(0.25)
 
 processing_time_sums = Dict{String, Float32}(
-                            "s3_get_times" => 0,
+                            "get_times" => 0,
+                            "parse_times" => 0,
                             "load_all_data_time" => 0,
                             "affinity_calculation_time" => 0,
-                            "s3_put_time" => 0,
+                            "set_time" => 0,
                             "total_time" => 0)
 
-aff_threshold = Float32(0.25)
 time_begin = now()
 for pair in keys(pairs)
     return_data = create_edge_lambda(pair[1],
@@ -81,43 +62,53 @@ for pair in keys(pairs)
                                      "seunglab-test",
                                      pairs[pair],
                                      aff_threshold)
-    processing_time_sums["s3_get_times"] +=
-        sum(map((ms) -> Float32(ms.value), return_data["s3_get_times"])) /
-        length(return_data["s3_get_times"])
+    processing_time_sums["get_times"] +=
+        sum(return_data["get_times"]) /
+        length(return_data["get_times"])
+    processing_time_sums["parse_times"] +=
+        sum(return_data["parse_times"]) /
+        length(return_data["parse_times"])
     processing_time_sums["load_all_data_time"] +=
-        return_data["load_all_data_time"].value
+        return_data["load_all_data_time"]
     processing_time_sums["affinity_calculation_time"] +=
-        return_data["affinity_calculation_time"].value
-    processing_time_sums["s3_put_time"] += return_data["s3_put_time"].value
-    processing_time_sums["total_time"] += return_data["total_time"].value
+        return_data["affinity_calculation_time"]
+    processing_time_sums["set_time"] += return_data["set_time"]
+    processing_time_sums["total_time"] += return_data["total_time"]
 
-    num_processed = num_processed + 1
-    println("Processed: $num_processed")
+    num_edges_processed = num_edges_processed + 1
+    println("Processed:\t$num_edges_processed")
     println("*************************")
-    println("Data: $(return_data["data"])")
+    println("Data:\t$(return_data["data"])")
 
-    println("s3_get_time: $(return_data["s3_get_times"])")
-    println("s3_get_time_total: " *
-        "$(sum(map((ms) -> Float32(ms.value), return_data["s3_get_times"])))")
-    println("Average s3_get_times: " *
-            "$(processing_time_sums["s3_get_times"] / num_processed)")
+    println("get_times:\t$(return_data["get_times"])")
+    println("Total get_time:\t" *
+        "$(sum(return_data["get_times"]))")
+    println("Average get_times:\t" *
+            "$(processing_time_sums["get_times"] / num_edges_processed)")
 
-    println("load_all_data_time: $(return_data["load_all_data_time"])")
-    println("Average load_all_data_time:" *
-            "$(processing_time_sums["load_all_data_time"] / num_processed)")
-    
-    println("affinity_calculation_time:" *
+    println("parse_times:\t$(return_data["parse_times"])")
+    println("Total parse_times:\t" * "$(sum(return_data["parse_times"]))")
+    println("Average parse_times:\t" *
+            "$(processing_time_sums["parse_times"] / num_edges_processed)")
+
+    println("load_all_data_time:\t" *
+            "$(return_data["load_all_data_time"])")
+    println("Average load_all_data_time:\t" *
+            "$(processing_time_sums["load_all_data_time"] / num_edges_processed)")
+
+    println("affinity_calculation_time:\t" *
             "$(return_data["affinity_calculation_time"])")
-    println("Average affinity_calculation_time:" *
-            "$(processing_time_sums["affinity_calculation_time"] / num_processed)")
+    println("Average affinity_calculation_time:\t" *
+            "$(processing_time_sums["affinity_calculation_time"] /
+               num_edges_processed)")
 
-    println("s3_put_time: $(return_data["s3_put_time"])")
-    println("Average s3_put_time:" *
-            "$(processing_time_sums["s3_put_time"] / num_processed)")
+    println("set_time:\t$(return_data["set_time"])")
+    println("Average set_time:\t" *
+            "$(processing_time_sums["set_time"] / num_edges_processed)")
 
-    println("total_time: $(return_data["total_time"])")
-    println("Average total_time:" *
-            "$(processing_time_sums["total_time"] / num_processed)")
+    println("total_time:\t$(return_data["total_time"])")
+    println("Average total_time:\t" *
+            "$(processing_time_sums["total_time"] / num_edges_processed)")
 
     println("*************************")
 end
