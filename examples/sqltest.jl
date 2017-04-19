@@ -38,12 +38,12 @@ for x in 1:chunk_size[1]:data_size[1]
         println("Writing SQL")
         #@time write_sql(edges,incomplete_segments,aff_threshold,global_offset)
 
-        seg_pair = first(keys(edges))
-        edge = edges[seg_pair]
+        seg_pairs = [keys(edges)...]
+        edge = edges[seg_pairs[1]]
 
-        insert_incomplete_edge(edge, global_offset)
+        #insert_incomplete_edge(edge, global_offset)
 
-        read_edge = edge
+        read_edge = get_incomplete_edge(seg_pairs[1], aff_threshold)
         println(read_edge)
 
 
