@@ -27,24 +27,20 @@ function create_edge{Ts, Ta}(seg_1::Ts, seg_2::Ts, bucket::String,
 
     load_all_data_time = @elapsed map(s3_keys) do s3_key
         local_filename = "/tmp/" * replace(s3_key, "/", "")
-        get_time = @elapsed input = 
-            s3_get_file(aws, bucket, s3_key, local_filename)
-        parse_time = @elapsed open(local_filename, "r") do local_file
-            for line in eachline(local_file)
-                data = split(line, " ")
-                i = parse(Int, data[1])
-                x,y,z = [parse(Ts, x) for x in data[2:4]]
-                aff = parse(Ta, data[5])
-                coord = (x::Ts, y::Ts, z::Ts)
-                edge.boundaries[i][coord] = aff
-            end
+        get_time = @elapsed input = s3_get(aws, bucket, s3_key)
+        parse_time = @elapsed for line in split(input, "\n", keep=false)
+            data = split(line, " ")
+            i = parse(Int, data[1])
+            x,y,z = [parse(Ts, x) for x in data[2:4]]
+            aff = parse(Ta, data[5])
+            coord = (x::Ts, y::Ts, z::Ts)
+            edge.boundaries[i][coord] = aff
         end
         push!(get_times, get_time) # Bench
         push!(parse_times, parse_time) # Bench
     end
 
     affinity_calculation_time = @elapsed begin
-
         total_boundaries = union(Set(keys(edge.boundaries[1])),
                                  Set(keys(edge.boundaries[2])),
                                  Set(keys(edge.boundaries[3])))
@@ -57,7 +53,7 @@ function create_edge{Ts, Ta}(seg_1::Ts, seg_2::Ts, bucket::String,
         data = ""
         if length(cc_means) > 0
             data = join([
-                         p[0], p[2], Float64(edge.sum_affinity), edge.area,
+                         p[1], p[2], Float64(edge.sum_affinity), edge.area,
                          p[1], p[2], maximum(cc_means),          edge.area
                         ], " ")
         else
@@ -83,6 +79,7 @@ function create_edge{Ts, Ta}(seg_1::Ts, seg_2::Ts, bucket::String,
                 "total_time" => total_time.value)
 end
 
+MAX_THROTTLE_COUNT = 20
 function create_edges{Ts, Ta}(
         batched_pairs::Dict{Tuple{Ts, Ts}, Array{String, 1}},
         bucket::String,
@@ -95,7 +92,11 @@ function create_edges{Ts, Ta}(
     get_times = 0 # Bench
     parse_times = 0 # Bench
 
-    load_all_data_time = @elapsed map(keys(batched_pairs)) do pair
+    # pass throttle_count by reference
+    throttle_count = 0
+    wake_up = Condition()
+    load_all_data_time = @elapsed get_parse_tasks_tasks = @sync map(
+              keys(batched_pairs)) do pair
         if !haskey(edges, pair)
             edges[pair] = MeanEdge{Ta}(zero(UInt32),
                  zero(Ta),
@@ -108,10 +109,15 @@ function create_edges{Ts, Ta}(
         edge = edges[pair]
         map(batched_pairs[pair]) do s3_key
             local_filename = "/tmp/" * replace(s3_key, "/", "")
-            get_times += @elapsed input =
-                s3_get_file(aws, bucket, s3_key, local_filename)
-            parse_times += @elapsed open(local_filename, "r") do local_file
-                for line in eachline(local_file)
+            @async begin
+                throttle_count += 1
+                notify(wake_up, throttle_count)
+                if throttle_count > MAX_THROTTLE_COUNT
+                    wait(wake_up)
+                end
+                get_time_single = @elapsed input = s3_get(aws, bucket, s3_key)
+                parse_time_single = @elapsed for line in split(input, "\n",
+                                                               keep=false)
                     data = split(line, " ")
                     i = parse(Int, data[1])
                     x,y,z = [parse(Ts, x) for x in data[2:4]]
@@ -119,47 +125,49 @@ function create_edges{Ts, Ta}(
                     coord = (x::Ts, y::Ts, z::Ts)
                     edge.boundaries[i][coord] = aff
                 end
+                throttle_count -= 1
+                notify(wake_up; all=true)
+                [get_time_single, parse_time_single]
             end
         end
     end
-
-    data = []
-    affinity_calculation_time = 0
+    # get_parse_tasks is an array of tasks that return an tasks of array Int64
+    get_parse_tasks = vcat(get_parse_tasks_tasks...)
+    pair_time_arrays = map(wait, get_parse_tasks)
+    # array of array to 2d array
+    get_times, parse_times = sum(hcat(pair_time_arrays...), 2)
+    
     set_times = 0
-    map(keys(edges)) do pair
+    affinity_calculation_time = @elapsed data = map(keys(edges)) do pair
+        edge = edges[pair]
+        total_boundaries = union(Set(keys(edge.boundaries[1])),
+                                 Set(keys(edge.boundaries[2])),
+                                 Set(keys(edge.boundaries[3])))
+        area, sum_affinity = calculate_mean_affinity(edge.boundaries,
+                                                     total_boundaries)
+        edge.sum_affinity = sum_affinity
+        edge.area = area
 
-        affinity_calculation_time += @elapsed begin
-            
-            edge = edges[pair]
-
-            affinity_calculation_time = now() # Bench
-
-            total_boundaries = union(Set(keys(edge.boundaries[1])),
-                                     Set(keys(edge.boundaries[2])),
-                                     Set(keys(edge.boundaries[3])))
-            area, sum_affinity = calculate_mean_affinity(edge.boundaries,
-                                                         total_boundaries)
-            edge.sum_affinity = sum_affinity
-            edge.area = area
-
-            cc_means = calculate_mean_affinity_pluses(pair, edge, aff_threshold)
-        end
+        cc_means = calculate_mean_affinity_pluses(pair, edge, aff_threshold)
 
         if length(cc_means) > 0
-            push!(data, join([
-                      pair[1], pair[2], Float64(edge.sum_affinity), edge.area,
-                      pair[1], pair[2], maximum(cc_means),          edge.area
-                     ], " "))
+            row = join([
+                    pair[1], pair[2], Float64(edge.sum_affinity), edge.area,
+                    pair[1], pair[2], maximum(cc_means),          edge.area
+                   ], " ")
         else
-            push!(data, join([
-                      pair[1], pair[2], Float64(edge.sum_affinity), edge.area,
-                      pair[1], pair[2], Float64(edge.sum_affinity), edge.area
-                     ], " "))
+            row = join([
+                    pair[1], pair[2], Float64(edge.sum_affinity), edge.area,
+                    pair[1], pair[2], Float64(edge.sum_affinity), edge.area
+                   ], " ")
         end
+        (pair, row)
+    end
 
-        set_times += @elapsed s3_put(
-           aws, bucket, "region_graph/output/$(pair[1])_$(pair[2])",
-           join(data, "\n"))
+    set_times = @elapsed @sync foreach(data) do one_data
+        @async s3_put(aws, bucket,
+               "region_graph/output/$(one_data[1][1])_$(one_data[1][2])",
+               one_data[2])
     end
 
     total_time = now() - total_time # Bench
