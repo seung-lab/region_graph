@@ -100,7 +100,7 @@ function reweight_affinity{Ta}(boundary::Dict{Tuple{Int32,Int32,Int32}, Ta}, bou
     return weighted_aff, weighted_area
 end
 
-function process_edge(p, edge)
+function process_edge!(p, edge, results)
     cc_sets = connect_component(union(Set(keys(edge.boundaries[1])),Set(keys(edge.boundaries[2])),Set(keys(edge.boundaries[3]))))
     cc_mean = Float32[]
     push!(cc_sets, union(Set(keys(edge.boundaries[1])),Set(keys(edge.boundaries[2])),Set(keys(edge.boundaries[3]))))
@@ -116,10 +116,12 @@ function process_edge(p, edge)
             push!(cc_mean, sum_affinity)
         end
     end
+    results[1] = Float64(edge.sum_affinity)
+    results[2] = results[4] = Float64(edge.area)
     if length(cc_mean) > 0
-        return "$(p[1]) $(p[2]) $(Float64(edge.sum_affinity)) $(Float64(edge.area)) $(p[1]) $(p[2]) $(Float64(maximum(cc_mean))) $(Float64(edge.area))\n"
+        results[3] = Float64(maximum(cc_mean))
     else
-        return "$(p[1]) $(p[2]) $(Float64(edge.sum_affinity)) $(Float64(edge.area)) $(p[1]) $(p[2]) $(Float64(edge.sum_affinity)) $(Float64(edge.area))\n"
+        results[3] = results[1]
     end
 end
 

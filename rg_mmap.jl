@@ -1,3 +1,4 @@
+using Base.Threads
 using HDF5
 
 include("constants.jl")
@@ -23,6 +24,7 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
     println("$xend, $yend, $zend")
 
     edges=Dict{Tuple{Ts,Ts},MeanEdge{Ta}}()
+    edges_array = Array{Tuple{Ts,Ts},1}()
     idset = Set{UInt32}()
     maxid = zero(UInt32)
     f1 = open("rg_volume_$(ARGS[2])_$(index[1])_$(index[2])_$(index[3]).in","w")
@@ -123,24 +125,33 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
     #write(f1,"$maxid $(size(collect(idset))[1]+1) $(size(collect(edges))[1])\n")
 
     count_edges = 0
-    #f_comp = open("complete_edges_$(index[1])_$(index[2])_$(index[3]).txt", "w")
     f_incomp = open("$(ARGS[2])/incomplete_edges_$(index[1])_$(index[2])_$(index[3]).txt", "w")
     for p in keys(edges)
         if p[1] in incomplete_segments && p[2] in incomplete_segments
-            push!(boundary_edges, p)
-            open("$(ARGS[2])/$(p[1])_$(p[2])_$(index[1])_$(index[2])_$(index[3]).txt", "w") do f
-                for i in 1:3
-                    for k in keys(edges[p].boundaries[i])
-                        write(f, "$i $(k[1]+offset[1]-1) $(k[2]+offset[2]-1) $(k[3]+offset[3]-1) $(Float64(edges[p].boundaries[i][k]))\n")
-                    end
-                end
-            end
-            write(f_incomp, "$(p[1]) $(p[2])\n")
-            count_edges+=1
+            #push!(boundary_edges, p)
+            #open("$(ARGS[2])/$(p[1])_$(p[2])_$(index[1])_$(index[2])_$(index[3]).txt", "w") do f
+            #    for i in 1:3
+            #        for k in keys(edges[p].boundaries[i])
+            #            write(f, "$i $(k[1]+offset[1]-one(Int32)) $(k[2]+offset[2]-one(Int32)) $(k[3]+offset[3]-one(Int32)) $(Float64(edges[p].boundaries[i][k]))\n")
+            #        end
+            #    end
+            #end
+            #write(f_incomp, "$(p[1]) $(p[2])\n")
+            #count_edges+=1
             continue
         end
-        write(f1, process_edge(p,edges[p]))
-
+        push!(edges_array, p)
+    end
+    complete_edge_output = Array{Array{Float64,1},1}(length(edges_array))
+    @threads for i in 1:length(edges_array)
+        complete_edge_output[i] = zeros(Float64, 4)
+        process_edge!(edges_array[i], edges[edges_array[i]], complete_edge_output[i])
+        if i % 100000 == 0
+            println("process complete edge: $i")
+        end
+    end
+    for i in 1:length(edges_array)
+        write(f1, "$(edges_array[i][1]) $(edges_array[i][2]) $(complete_edge_output[i][1]) $(complete_edge_output[i][2]) $(edges_array[i][1]) $(edges_array[i][2]) $(complete_edge_output[i][3]) $(complete_edge_output[i][4])\n")
     end
     close(f1)
     close(f_incomp)
