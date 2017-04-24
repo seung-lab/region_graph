@@ -35,16 +35,19 @@ for x in 1:chunk_size[1]:data_size[1]
         seg_view = seg[x:end_index[1],y:end_index[2],z:end_index[3]]
 
         @time edges, incomplete_segments = enumerate_edges(aff_view,seg_view)
-        println("Writing SQL")
-        #@time write_sql(edges,incomplete_segments,aff_threshold,global_offset)
 
         seg_pairs = [keys(edges)...]
-        edge = edges[seg_pairs[1]]
+        #edge = edges[seg_pairs[1]]
+        #println(edge)
 
         #insert_incomplete_edge(edge, global_offset)
+        insert_incomplete_edges([values(edges)...], global_offset)
 
-        read_edge = get_incomplete_edge(seg_pairs[1], aff_threshold)
-        println(read_edge)
+        #read_edge = get_incomplete_edge((4320, 959519), aff_threshold)
+        #println(read_edge)
+
+        read_edges = get_incomplete_edges(seg_pairs, aff_threshold)
+        println(read_edges[seg_pairs[10]])
 
 
     end
