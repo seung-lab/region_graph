@@ -1,6 +1,4 @@
 using HDF5
-using EMIRT
-using Interpolations
 
 include("constants.jl")
 include("mean_edge.jl")
@@ -157,7 +155,7 @@ aff = f["main"]
 if ismmappable(aff)
     aff = readmmap(aff)
 else
-    aff = AffinityMap(read(aff))
+    aff = read(aff)
 end
 close(f)
 
@@ -166,7 +164,7 @@ seg = f["main"]
 if ismmappable(seg)
     seg = readmmap(seg)
 else
-    seg = Segmentation(read(seg))
+    seg = read(seg)
 end
 close(f)
 
