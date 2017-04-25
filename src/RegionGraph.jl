@@ -165,7 +165,7 @@ function reweight_affinity{Ta}(boundary::Dict{Tuple{Int32,Int32,Int32}, Ta}, bou
     return weighted_aff, weighted_area
 end
 
-function calculate_mean_affinity_pluses{Ta, Ts}(p::Tuple{Ts, Ts}, edge::MeanEdge{Ts,Ta}, aff_threshold::Ta)
+function calculate_mean_affinity_pluses{Ta, Ts}(edge::MeanEdge{Ts,Ta}, aff_threshold::Ta)
     cc_sets = connect_component(union(Set(keys(edge.boundaries[1])),Set(keys(edge.boundaries[2])),Set(keys(edge.boundaries[3]))))
     cc_means = Float32[]
     push!(cc_sets, union(Set(keys(edge.boundaries[1])),Set(keys(edge.boundaries[2])),Set(keys(edge.boundaries[3]))))

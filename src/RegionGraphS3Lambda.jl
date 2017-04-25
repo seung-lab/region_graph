@@ -50,17 +50,17 @@ function create_edge{Ts, Ta}(seg_1::Ts, seg_2::Ts, bucket::String,
         edge.sum_affinity = sum_affinity
         edge.area = area
 
-        cc_means = calculate_mean_affinity_pluses(p, edge, aff_threshold)
+        cc_means = calculate_mean_affinity_pluses(edge, aff_threshold)
         data = ""
         if length(cc_means) > 0
             data = join([
-                         p[1], p[2], Float64(edge.sum_affinity), edge.area,
-                         p[1], p[2], maximum(cc_means),          edge.area
+                         edge.seg_id_1, edge.seg_id_2, Float64(edge.sum_affinity), edge.area,
+                         edge.seg_id_1, edge.seg_id_2, maximum(cc_means),          edge.area
                         ], " ")
         else
             data = join([
-                         p[1], p[2], Float64(edge.sum_affinity), edge.area,
-                         p[1], p[2], Float64(edge.sum_affinity), edge.area
+                         edge.seg_id_1, edge.seg_id_2, Float64(edge.sum_affinity), edge.area,
+                         edge.seg_id_1, edge.seg_id_2, Float64(edge.sum_affinity), edge.area
                          ], " ")
         end
     end
@@ -140,8 +140,7 @@ function create_edges{Ts, Ta}(
     get_times, parse_times = sum(hcat(pair_time_arrays...), 2)
     
     set_times = 0
-    affinity_calculation_time = @elapsed data = map(keys(edges)) do pair
-        edge = edges[pair]
+    affinity_calculation_time = @elapsed data = map(values(edges)) do edge
         total_boundaries = union(Set(keys(edge.boundaries[1])),
                                  Set(keys(edge.boundaries[2])),
                                  Set(keys(edge.boundaries[3])))
@@ -150,20 +149,20 @@ function create_edges{Ts, Ta}(
         edge.sum_affinity = sum_affinity
         edge.area = area
 
-        cc_means = calculate_mean_affinity_pluses(pair, edge, aff_threshold)
+        cc_means = calculate_mean_affinity_pluses(edge, aff_threshold)
 
         if length(cc_means) > 0
             row = join([
-                    pair[1], pair[2], Float64(edge.sum_affinity), edge.area,
-                    pair[1], pair[2], maximum(cc_means),          edge.area
+                    edge.seg_id_1, edge.seg_id_2, Float64(edge.sum_affinity), edge.area,
+                    edge.seg_id_1, edge.seg_id_2, maximum(cc_means),          edge.area
                    ], " ")
         else
             row = join([
-                    pair[1], pair[2], Float64(edge.sum_affinity), edge.area,
-                    pair[1], pair[2], Float64(edge.sum_affinity), edge.area
+                    edge.seg_id_1, edge.seg_id_2, Float64(edge.sum_affinity), edge.area,
+                    edge.seg_id_1, edge.seg_id_2, Float64(edge.sum_affinity), edge.area
                    ], " ")
         end
-        (pair, row)
+        ((edge.seg_id_1, edge.seg_id_2), row)
     end
 
     set_times = @elapsed @sync foreach(data) do one_data
