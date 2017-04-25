@@ -2,24 +2,24 @@
 
 using AWSCore
 using AWSS3
-# using AWSLambda
+using AWSLambda
 using RegionGraph
 using RegionGraphS3Lambda
 aws = AWSCore.aws_config()
 
 # get the keys ahead of time so we don't have to pay for additional query
 # overhead
-create_edge_lambda_batch = function create_edge_jl_batch(
+create_edge_lambda_batch = @lambda aws function create_edge_jl_batch(
         batched_pairs::Dict{Tuple{Int64, Int64}, Array{String, 1}},
         bucket::String,
         aff_threshold::Float32)
     #@assert !Base.stale_cachefile("/var/task/julia/RegionGraph/RegionGraph.jl",
                                   #Base.LOAD_CACHE_PATH[1] * "/RegionGraph.ji")
 
-#     using AWSS3
-#     using AWSCore
-#     using RegionGraph
-#     using RegionGraphS3Lambda
+    using AWSS3
+    using AWSCore
+    using RegionGraph
+    using RegionGraphS3Lambda
 
     return create_edges(batched_pairs, bucket, aff_threshold)
 end
