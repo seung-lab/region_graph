@@ -1,4 +1,4 @@
-include("../src/RegionGraph.jl")
+include("RegionGraph.jl")
 
 module SQLEdges
 using EMIRT
@@ -16,7 +16,7 @@ const unescape = Dict([0x5C, 0x30] => [0x00] , [0x5C,0x5C] => [0x5C])
 function get_connection()
     global connection
     if connection == nothing
-        connection = mysql_connect("rg-test.cxbfj3vur7ww.us-east-1.rds.amazonaws.com", "rguser", "******", "region_graph")
+        connection = mysql_connect("rg-test.cxbfj3vur7ww.us-east-1.rds.amazonaws.com", "rguser", "(NDNL@Cfdx2[\\]Py", "region_graph")
     end
     return connection
 end
@@ -91,8 +91,8 @@ function get_incomplete_edges{Ta, Ts}(segment_pairs::Array{ Tuple{Ts, Ts}, 1 }, 
         segment_pairs_chunk = view(segment_pairs, segment_pairs_offset:min(length(segment_pairs), segment_pairs_offset + 5000 - 1))
 
         command = string("SELECT seg_id_1, seg_id_2, voxels FROM edge_voxel_list WHERE seg_id_1 = ? AND seg_id_2 = ?",
-                            repeat(" UNION SELECT seg_id_1, seg_id_2, voxels FROM edge_voxel_list WHERE seg_id_1 = ? AND seg_id_2 = ?", length(segment_pairs_chunk) - 1),
-                            ";")
+                          repeat(" UNION SELECT seg_id_1, seg_id_2, voxels FROM edge_voxel_list WHERE seg_id_1 = ? AND seg_id_2 = ?", length(segment_pairs_chunk) - 1),
+                          ";")
         querytypes = fill(MYSQL_TYPE_LONGLONG, 2 * length(segment_pairs_chunk))
         queryvalues = reinterpret(typeof(segment_pairs[1][1]), segment_pairs_chunk[:])
 
@@ -140,18 +140,30 @@ function get_incomplete_edge{Ta, Ts}(segment_pair::Tuple{Ts, Ts}, aff_threshold:
     end
 end
 
+
 function insert_incomplete_edges{Ta, Ts}(edges::Array{MeanEdge{Ts, Ta}, 1}, startIndex::Array{Int32, 1})
-    (xstart::Int32, ystart::Int32, zstart::Int32) = startIndex[1:3]
+    const (xstart::Int32, ystart::Int32, zstart::Int32) = startIndex[1:3]
+    const chunk_str = "$(xstart)_$(ystart)_$(zstart)"
     const con = get_connection()
+    const max_inserts = 5000
+    old_edges_chunk_count = 0
+    
+    command = String("")
+    querytypes = Array{UInt32, 1}()
+    queryvalues = Array{Any, 1}()
 
-    for edges_offset in 1:5000:length(edges)
-        edges_chunk = view(edges, edges_offset:min(length(edges), edges_offset + 5000 - 1))
+    for edges_offset in 1:max_inserts:length(edges)
+        edges_chunk = view(edges, edges_offset:min(length(edges), edges_offset + max_inserts - 1))
+        edges_chunk_count = length(edges_chunk)
 
-        command = string("INSERT INTO edge_voxel_list (seg_id_1,seg_id_2,chunk_id,voxels) VALUES (?,?,?,?)",
-                            repeat(",(?,?,?,?)", length(edges_chunk) - 1),
+        if (edges_chunk_count != old_edges_chunk_count) # Prevent the recreation of the same arrays over and over again
+            command = string("INSERT INTO edge_voxel_list (seg_id_1,seg_id_2,chunk_id,voxels) VALUES (?,?,?,?)",
+                            repeat(",(?,?,?,?)", edges_chunk_count - 1),
                             ";")
-        querytypes = repmat([MYSQL_TYPE_LONGLONG, MYSQL_TYPE_LONGLONG, MYSQL_TYPE_VARCHAR, MYSQL_TYPE_LONG_BLOB], length(edges_chunk))
-        queryvalues = Array{Any, 1}(4 * length(edges_chunk))
+            querytypes = repmat([MYSQL_TYPE_LONGLONG, MYSQL_TYPE_LONGLONG, MYSQL_TYPE_VARCHAR, MYSQL_TYPE_LONG_BLOB], edges_chunk_count)
+            queryvalues = Array{Any, 1}(4 * edges_chunk_count)
+            old_edges_chunk_count = edges_chunk_count
+        end
 
         for (idx, edge) in enumerate(edges_chunk)
             hexBuffer = IOBuffer();
@@ -160,15 +172,15 @@ function insert_incomplete_edges{Ta, Ts}(edges::Array{MeanEdge{Ts, Ta}, 1}, star
                     write(hexBuffer, UInt8(i), Int32(k[1]), Int32(k[2]), Int32(k[3]), Float32(edge.boundaries[i][k]))
                 end
             end
-            queryvalues[(4*idx - 3)] = edge.seg_id_1
-            queryvalues[(4*idx - 2)] = edge.seg_id_2
-            queryvalues[(4*idx - 1)] = "$(xstart)_$(ystart)_$(zstart)"
+            queryvalues[(4*idx - 3)], queryvalues[(4*idx - 2)] = minmax(edge.seg_id_1, edge.seg_id_2) # smaller seg ID always first
+            queryvalues[(4*idx - 1)] = chunk_str
 
             queryvalues[(4*idx - 0)] = mysql_blob_encode(resize!(hexBuffer.data, hexBuffer.size))
         end
 
         mysql_stmt_prepare(con, command)
-        println(mysql_execute(con, querytypes, queryvalues))
+        res = mysql_execute(con, querytypes, queryvalues)
+        println(res, " new edges inserted.")
     end
 end
 
