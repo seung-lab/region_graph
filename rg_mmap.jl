@@ -128,16 +128,16 @@ function regiongraph{Ta,Ts}(aff::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
     f_incomp = open("$(ARGS[2])/incomplete_edges_$(index[1])_$(index[2])_$(index[3]).txt", "w")
     for p in keys(edges)
         if p[1] in incomplete_segments && p[2] in incomplete_segments
-            #push!(boundary_edges, p)
-            #open("$(ARGS[2])/$(p[1])_$(p[2])_$(index[1])_$(index[2])_$(index[3]).txt", "w") do f
-            #    for i in 1:3
-            #        for k in keys(edges[p].boundaries[i])
-            #            write(f, "$i $(k[1]+offset[1]-one(Int32)) $(k[2]+offset[2]-one(Int32)) $(k[3]+offset[3]-one(Int32)) $(Float64(edges[p].boundaries[i][k]))\n")
-            #        end
-            #    end
-            #end
-            #write(f_incomp, "$(p[1]) $(p[2])\n")
-            #count_edges+=1
+            push!(boundary_edges, p)
+            open("$(ARGS[2])/$(p[1])_$(p[2])_$(index[1])_$(index[2])_$(index[3]).txt", "w") do f
+                for i in 1:3
+                    for k in keys(edges[p].boundaries[i])
+                        write(f, "$i $(k[1]+offset[1]-one(Int32)) $(k[2]+offset[2]-one(Int32)) $(k[3]+offset[3]-one(Int32)) $(Float64(edges[p].boundaries[i][k]))\n")
+                    end
+                end
+            end
+            write(f_incomp, "$(p[1]) $(p[2])\n")
+            count_edges+=1
             continue
         end
         push!(edges_array, p)
