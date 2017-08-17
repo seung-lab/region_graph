@@ -45,8 +45,8 @@ function connect_component(boundary::Set{Array{Int32,1}})
 end
 
 function count_edges(boundaries::Array{Dict{Array{Int32,1}, SemanticInfo},1}, boundary_cc::Set{Array{Int32,1}})
-    sem_sum_1 = zeros(Float32,5)
-    sem_sum_2 = zeros(Float32,5)
+    sem_sum_1 = zeros(Float32,4)
+    sem_sum_2 = zeros(Float32,4)
     counts = Int64[]
     bbox = Int32[chunk_size[1], chunk_size[2], chunk_size[3],0,0,0]
     com = Int[0,0,0]
