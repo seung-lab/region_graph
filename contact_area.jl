@@ -80,11 +80,13 @@ function count_edges(boundaries::Array{Dict{Array{Int32,1}, SemanticInfo},1}, bo
 end
 
 
-function process_edge!(p, edge, results)
+function process_edge(p, edge)
     cc_sets = connect_component(union(Set(keys(edge.boundaries[1])),Set(keys(edge.boundaries[2])),Set(keys(edge.boundaries[3]))))
+    results = []
     for i in 1:length(cc_sets)
         counts, vol, com, bbox, sem_sum_1, sem_sum_2 = count_edges(edge.boundaries, cc_sets[i])
         push!(results,[counts, vol, com, bbox, sem_sum_1, sem_sum_2])
     end
+    return results
 end
 
