@@ -22,7 +22,7 @@ function regiongraph{Ta,Ts}(sem::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
     println("$xstart, $ystart, $zstart")
     println("$xend, $yend, $zend")
 
-    edges=Dict{Tuple{Ts,Ts},ContactEdge{Ta}}()
+    edges=Dict{Tuple{Ts,Ts},ContactEdgeBool}()
     edges_array = Array{Tuple{Ts,Ts},1}()
     f1 = open("rg_volume_$(ARGS[2])_$(index[1])_$(index[2])_$(index[3]).in","w")
     boundary_edges = Set{Tuple{Ts,Ts}}()
@@ -38,34 +38,34 @@ function regiongraph{Ta,Ts}(sem::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
             if ( (x > xstart) && seg[x-1,y,z]!=0 && seg[x,y,z]!=seg[x-1,y,z])
               p = minmax(seg[x,y,z], seg[x-1,y,z])
               if !haskey(edges,p)
-                  edges[p] = ContactEdge{Ta}(Dict{Array{Int32,1}, SemanticInfo}[Dict{Array{Int32,1}, SemanticInfo}(),Dict{Array{Int32,1}, SemanticInfo}(), Dict{Array{Int32,1}, SemanticInfo}()])
+                  edges[p] = ContactEdgeBool(Dict{Array{Int32,1}, Bool}[Dict{Array{Int32,1}, Bool}(),Dict{Array{Int32,1}, Bool}(), Dict{Array{Int32,1}, Bool}()])
               end
               if p[1] == seg[x,y,z]
-                  edges[p].boundaries[1][coord] = [sem[x,y,z,:], sem[x-1,y,z,:]]
+                  edges[p].boundaries[1][deepcopy(coord)] = true
               else
-                  edges[p].boundaries[1][coord] = [sem[x-1,y,z,:], sem[x,y,z,:]]
+                  edges[p].boundaries[1][deepcopy(coord)] = false
               end
             end
             if ( (y > ystart) && seg[x,y-1,z]!=0 && seg[x,y,z]!=seg[x,y-1,z])
               p = minmax(seg[x,y,z], seg[x,y-1,z])
               if !haskey(edges,p)
-                  edges[p] = ContactEdge{Ta}(Dict{Array{Int32,1}, SemanticInfo}[Dict{Array{Int32,1}, SemanticInfo}(),Dict{Array{Int32,1}, SemanticInfo}(), Dict{Array{Int32,1}, SemanticInfo}()])
+                  edges[p] = ContactEdgeBool(Dict{Array{Int32,1}, Bool}[Dict{Array{Int32,1}, Bool}(),Dict{Array{Int32,1}, Bool}(), Dict{Array{Int32,1}, Bool}()])
               end
               if p[1] == seg[x,y,z]
-                  edges[p].boundaries[2][coord] = [sem[x,y,z,:], sem[x,y-1,z,:]]
+                  edges[p].boundaries[2][deepcopy(coord)] = true
               else
-                  edges[p].boundaries[2][coord] = [sem[x,y-1,z,:], sem[x,y,z,:]]
+                  edges[p].boundaries[2][deepcopy(coord)] = false
               end
             end
             if ( (z > zstart) && seg[x,y,z-1]!=0 && seg[x,y,z]!=seg[x,y,z-1])
               p = minmax(seg[x,y,z], seg[x,y,z-1])
               if !haskey(edges,p)
-                  edges[p] = ContactEdge{Ta}(Dict{Array{Int32,1}, SemanticInfo}[Dict{Array{Int32,1}, SemanticInfo}(),Dict{Array{Int32,1}, SemanticInfo}(), Dict{Array{Int32,1}, SemanticInfo}()])
+                  edges[p] = ContactEdgeBool(Dict{Array{Int32,1}, Bool}[Dict{Array{Int32,1}, Bool}(),Dict{Array{Int32,1}, Bool}(), Dict{Array{Int32,1}, Bool}()])
               end
               if p[1] == seg[x,y,z]
-                  edges[p].boundaries[3][coord] = [sem[x,y,z,:],sem[x,y,z-1,:]]
+                  edges[p].boundaries[3][deepcopy(coord)] = true
               else
-                  edges[p].boundaries[3][coord] = [sem[x,y,z-1,:],sem[x,y,z,:]]
+                  edges[p].boundaries[3][deepcopy(coord)] = false
               end
             end
           end
@@ -86,12 +86,12 @@ function regiongraph{Ta,Ts}(sem::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
           if (seg[x-1,y,z]!=0 && seg[x,y,z]!=seg[x-1,y,z])
             p = minmax(seg[x,y,z], seg[x-1,y,z])
             if !haskey(edges,p)
-                edges[p] = ContactEdge{Ta}(Dict{Array{Int32,1}, SemanticInfo}[Dict{Array{Int32,1}, SemanticInfo}(),Dict{Array{Int32,1}, SemanticInfo}(), Dict{Array{Int32,1}, SemanticInfo}()])
+                edges[p] = ContactEdgeBool(Dict{Array{Int32,1}, Bool}[Dict{Array{Int32,1}, Bool}(),Dict{Array{Int32,1}, Bool}(), Dict{Array{Int32,1}, Bool}()])
             end
             if p[1] == seg[x,y,z]
-                edges[p].boundaries[1][coord] = [sem[x,y,z,:], sem[x-1,y,z,:]]
+                edges[p].boundaries[1][deepcopy(coord)] = true
             else
-                edges[p].boundaries[1][coord] = [sem[x-1,y,z,:], sem[x,y,z,:]]
+                edges[p].boundaries[1][deepcopy(coord)] = false
             end
           end
         end
@@ -111,12 +111,12 @@ function regiongraph{Ta,Ts}(sem::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
           if (seg[x,y-1,z]!=0 && seg[x,y,z]!=seg[x,y-1,z])
             p = minmax(seg[x,y,z], seg[x,y-1,z])
             if !haskey(edges,p)
-                edges[p] = ContactEdge{Ta}(Dict{Array{Int32,1}, SemanticInfo}[Dict{Array{Int32,1}, SemanticInfo}(),Dict{Array{Int32,1}, SemanticInfo}(), Dict{Array{Int32,1}, SemanticInfo}()])
+                edges[p] = ContactEdgeBool(Dict{Array{Int32,1}, Bool}[Dict{Array{Int32,1}, Bool}(),Dict{Array{Int32,1}, Bool}(), Dict{Array{Int32,1}, Bool}()])
             end
             if p[1] == seg[x,y,z]
-                edges[p].boundaries[2][coord] = [sem[x,y,z,:],sem[x,y-1,z,:]]
+                edges[p].boundaries[2][deepcopy(coord)] = true
             else
-                edges[p].boundaries[2][coord] = [sem[x,y-1,z,:],sem[x,y,z,:]]
+                edges[p].boundaries[2][deepcopy(coord)] = false
             end
           end
         end
@@ -141,8 +141,31 @@ function regiongraph{Ta,Ts}(sem::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
                 for k in keys(edges[p].boundaries[i])
                     write(f, i)
                     write(f, (k+offset-one(Int32)))
-                    write(f, edges[p].boundaries[i][k][1])
-                    write(f, edges[p].boundaries[i][k][2])
+                    if i == 1
+                        if edges[p].boundaries[i][k]
+                            write(f, sem[k[1],k[2],k[3],:])
+                            write(f, sem[k[1]-1,k[2],k[3],:])
+                        else
+                            write(f, sem[k[1]-1,k[2],k[3],:])
+                            write(f, sem[k[1],k[2],k[3],:])
+                        end
+                    elseif i == 2
+                        if edges[p].boundaries[i][k]
+                            write(f, sem[k[1],k[2],k[3],:])
+                            write(f, sem[k[1],k[2]-1,k[3],:])
+                        else
+                            write(f, sem[k[1],k[2]-1,k[3],:])
+                            write(f, sem[k[1],k[2],k[3],:])
+                        end
+                    elseif i == 3
+                        if edges[p].boundaries[i][k]
+                            write(f, sem[k[1],k[2],k[3],:])
+                            write(f, sem[k[1],k[2],k[3]-1,:])
+                        else
+                            write(f, sem[k[1],k[2],k[3]-1,:])
+                            write(f, sem[k[1],k[2],k[3],:])
+                        end
+                    end
                 end
             end
         end

@@ -4,7 +4,11 @@ using DataStructures
 typealias SemanticInfo Array{Array{Float32,1},1}
 
 abstract Edge
-type ContactEdge{Ta} <: Edge
+type ContactEdgeBool <: Edge
+    boundaries::Array{Dict{Array{Int32,1}, Bool},1}
+end
+
+type ContactEdgeSem <: Edge
     boundaries::Array{Dict{Array{Int32,1}, SemanticInfo},1}
 end
 
