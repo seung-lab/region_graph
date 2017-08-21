@@ -1,7 +1,6 @@
 using Base.Threads
 using HDF5
 
-include("constants.jl")
 include("contact_area.jl")
 
 function regiongraph{Ta,Ts}(sem::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int32,1})
