@@ -3,16 +3,12 @@ function process_instance(edges, idx)
     count = 0
     idx_frag = 0
     f = 0
-    f_exec = open("mv_edges_$(idx).sh", "w")
     mkdir("$idx")
     for p in keys(edges)
         if count == 0
             f = open("$(idx)/input_$(idx_frag).txt","w")
         end
         write(f,"$(p[1]) $(p[2]) $(join(edges[p], " "))\n")
-        for s in edges[p]
-            write(f_exec, "mv edges/$(p[1])_$(p[2])_$(s).txt $idx\n")
-        end
         count += 1
         if count >= fragsize
             idx_frag += 1
@@ -20,8 +16,6 @@ function process_instance(edges, idx)
             close(f)
         end
     end
-    write(f_exec, "tar jcvf edges_$idx.tar.bz2 $idx")
-    close(f_exec)
 end
 
 edges = Dict{Tuple{Int,Int}, Array{String,1}}()
