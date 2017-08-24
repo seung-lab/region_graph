@@ -19,10 +19,11 @@ function process_instance(edges, idx)
 end
 
 edges = Dict{Tuple{Int,Int}, Array{String,1}}()
-for fn in filter(x->ismatch(r"incomplete_edges_\d+_\d+_\d+.txt",x), readdir("./edges"))
-    m = match(r"incomplete_edges_(\d+_\d+_\d+).txt", fn)
-    pos = m.captures[1]
-    open("edges/$fn") do f
+for i in 0:53
+for j in 0:35
+    fn = "incomplete_edges_$(i)_$(j)_0.txt"
+    pos = "$(i)_$(j)_0"
+    open("$(ARGS[1])/$fn") do f
         for ln in eachline(f)
             seg1, seg2 = [parse(Int,x) for x in split(ln, " ")]
             p = minmax(seg1, seg2)
@@ -33,6 +34,7 @@ for fn in filter(x->ismatch(r"incomplete_edges_\d+_\d+_\d+.txt",x), readdir("./e
         end
     end
     println("$(length(edges)) edges to process")
+end
 end
 
 nprocess = 8
