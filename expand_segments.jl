@@ -5,15 +5,14 @@ function assign_zero(pos, seg, window_size)
     (xup,yup,zup) = (min(xdim,xpos+window_size), min(ydim,ypos+window_size), min(zdim,zpos+window_size))
     min_distance = 100000
     segid = 0
-    for z = zlow:zup
-        for y = ylow:yup
-            for x = xlow:xup
-                if seg[x,y,z] != 0
-                    distance = (abs(xpos-x) + abs(ypos-y) + abs(zpos-z))
-                    if distance < min_distance
-                        min_distance = distance
-                        segid = seg[x,y,z]
-                    end
+    z = zpos
+    for y = ylow:yup
+        for x = xlow:xup
+            if seg[x,y,z] != 0
+                distance = (abs(xpos-x) + abs(ypos-y))
+                if distance < min_distance
+                    min_distance = distance
+                    segid = seg[x,y,z]
                 end
             end
         end
@@ -34,10 +33,10 @@ function expand_segments{Ts}(seg::Array{Ts,3})
                 window_size = 1
                 d_size += 1
                 segid = 0
-                while window_size < xdim
+                while window_size < 4
                     segid = assign_zero((x,y,z), seg, window_size)
                     if segid == 0
-                        window_size *= 2
+                        window_size += 2
                     else
                         break
                     end
