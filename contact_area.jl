@@ -52,7 +52,7 @@ function count_edges(boundaries::Array{Dict{Array{Int32,1}, SemanticInfo},1}, bo
     sem_sum_1 = zeros(Float32,4)
     sem_sum_2 = zeros(Float32,4)
     counts = Int64[]
-    bbox = Int32[chunk_size[1], chunk_size[2], chunk_size[3],0,0,0]
+    bbox = Int32[data_end[1], data_end[2], data_end[3],0,0,0]
     com = Int[0,0,0]
     vol = 0
     for v in boundary_cc
