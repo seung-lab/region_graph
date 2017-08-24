@@ -27,14 +27,17 @@ function regiongraph{Ta,Ts}(sem::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
     f1 = open("rg_volume_$(ARGS[2])_$(index[1])_$(index[2])_$(index[3]).in","w")
     boundary_edges = Set{Tuple{Ts,Ts}}()
     incomplete_segments = Set{Ts}()
+    coord = Int32[1,1,1]
     for z=zstart:zend::Int32
+      coord[3] = z
       for y=ystart:yend::Int32
+        coord[2] = y
         for x=xstart:xend::Int32
           if seg[x,y,z]!=0   # ignore background voxels
             if x == xstart || y == ystart || x == xend || y == yend
                 push!(incomplete_segments, seg[x,y,z])
             end
-            coord = [x::Int32,y::Int32,z::Int32]
+            coord[1] = x
             if ( (x > xstart) && seg[x-1,y,z]!=0 && seg[x,y,z]!=seg[x-1,y,z])
               p = minmax(seg[x,y,z], seg[x-1,y,z])
               if !haskey(edges,p)
@@ -75,14 +78,16 @@ function regiongraph{Ta,Ts}(sem::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
 
     if !real_x_boundary
       x = xend+one(Int32)
+      coord[1] = x
       println("process 1 voxel overlapping yz face")
       for z=zstart:zend::Int32
+        coord[3] = z
         for y=ystart:yend::Int32
           if seg[x,y,z]==0   # ignore background voxels
               continue
           end
           push!(incomplete_segments, seg[x,y,z])
-          coord = [x::Int32,y::Int32,z::Int32]
+          coord[2] = y
           if (seg[x-1,y,z]!=0 && seg[x,y,z]!=seg[x-1,y,z])
             p = minmax(seg[x,y,z], seg[x-1,y,z])
             if !haskey(edges,p)
@@ -100,14 +105,16 @@ function regiongraph{Ta,Ts}(sem::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
 
     if !real_y_boundary
       y = yend+one(Int32)
+      coord[2] = y
       println("process 1 voxel overlapping xz face")
       for z=zstart:zend::Int32
+        coord[3] = z
         for x=xstart:xend::Int32
           if seg[x,y,z]==0   # ignore background voxels
               continue
           end
+          coord[1] = x
           push!(incomplete_segments, seg[x,y,z])
-          coord = [x::Int32,y::Int32,z::Int32]
           if (seg[x,y-1,z]!=0 && seg[x,y,z]!=seg[x,y-1,z])
             p = minmax(seg[x,y,z], seg[x,y-1,z])
             if !haskey(edges,p)
