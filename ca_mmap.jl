@@ -148,31 +148,32 @@ function regiongraph{Ta,Ts}(sem::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
                 for k in keys(edges[p].boundaries[i])
                     write(f, i)
                     write(f, (k+offset-one(Int32)))
-                    if i == 1
-                        if edges[p].boundaries[i][k]
-                            write(f, sem[k[1],k[2],k[3],:])
-                            write(f, sem[k[1]-1,k[2],k[3],:])
-                        else
-                            write(f, sem[k[1]-1,k[2],k[3],:])
-                            write(f, sem[k[1],k[2],k[3],:])
-                        end
-                    elseif i == 2
-                        if edges[p].boundaries[i][k]
-                            write(f, sem[k[1],k[2],k[3],:])
-                            write(f, sem[k[1],k[2]-1,k[3],:])
-                        else
-                            write(f, sem[k[1],k[2]-1,k[3],:])
-                            write(f, sem[k[1],k[2],k[3],:])
-                        end
-                    elseif i == 3
-                        if edges[p].boundaries[i][k]
-                            write(f, sem[k[1],k[2],k[3],:])
-                            write(f, sem[k[1],k[2],k[3]-1,:])
-                        else
-                            write(f, sem[k[1],k[2],k[3]-1,:])
-                            write(f, sem[k[1],k[2],k[3],:])
-                        end
-                    end
+                    write(f, edges[p].boundaries[i][k])
+                    #if i == 1
+                    #    if edges[p].boundaries[i][k]
+                    #        write(f, sem[k[1],k[2],k[3],:])
+                    #        write(f, sem[k[1]-1,k[2],k[3],:])
+                    #    else
+                    #        write(f, sem[k[1]-1,k[2],k[3],:])
+                    #        write(f, sem[k[1],k[2],k[3],:])
+                    #    end
+                    #elseif i == 2
+                    #    if edges[p].boundaries[i][k]
+                    #        write(f, sem[k[1],k[2],k[3],:])
+                    #        write(f, sem[k[1],k[2]-1,k[3],:])
+                    #    else
+                    #        write(f, sem[k[1],k[2]-1,k[3],:])
+                    #        write(f, sem[k[1],k[2],k[3],:])
+                    #    end
+                    #elseif i == 3
+                    #    if edges[p].boundaries[i][k]
+                    #        write(f, sem[k[1],k[2],k[3],:])
+                    #        write(f, sem[k[1],k[2],k[3]-1,:])
+                    #    else
+                    #        write(f, sem[k[1],k[2],k[3]-1,:])
+                    #        write(f, sem[k[1],k[2],k[3],:])
+                    #    end
+                    #end
                 end
             end
         end
