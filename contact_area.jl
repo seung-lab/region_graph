@@ -48,6 +48,36 @@ function connect_component(boundary::Set{Array{Int32,1}})
     return cc_sets
 end
 
+function count_edges(boundaries::Array{Dict{Array{Int32,1}, Bool},1}, boundary_cc::Set{Array{Int32,1}})
+    counts = Int64[]
+    bbox = Int32[data_end[1], data_end[2], data_end[3],0,0,0]
+    com = Int[0,0,0]
+    vol = 0
+    for v in boundary_cc
+        com[1] += v[1]
+        com[2] += v[2]
+        com[3] += v[3]
+        vol += 1
+        bbox[1] = min(bbox[1],v[1])
+        bbox[2] = min(bbox[2],v[2])
+        bbox[3] = min(bbox[3],v[3])
+        bbox[4] = max(bbox[4],v[1])
+        bbox[5] = max(bbox[5],v[2])
+        bbox[6] = max(bbox[6],v[3])
+    end
+
+    for i in 1:3
+        count = 0
+        for v in keys(boundaries[i])
+            if v in boundary_cc
+                count += 1
+            end
+        end
+        append!(counts, count)
+    end
+    return counts, vol, com, bbox, 0, 0
+end
+
 function count_edges(boundaries::Array{Dict{Array{Int32,1}, SemanticInfo},1}, boundary_cc::Set{Array{Int32,1}})
     sem_sum_1 = zeros(Float32,4)
     sem_sum_2 = zeros(Float32,4)
