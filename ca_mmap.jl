@@ -138,7 +138,7 @@ function regiongraph{Ta,Ts}(sem::Array{Ta,4},seg::Array{Ts,3}, offset::Array{Int
     for p in keys(edges)
         fn = "$(ARGS[1])/$(p[1])_$(p[2])_$(index[1])_$(index[2])_$(index[3]).txt"
         if p[1] in incomplete_segments && p[2] in incomplete_segments
-            fn = "$(ARGS[1])/$(p[1])_$(p[2])_$(index[1])_$(index[2])_$(index[3]).txt"
+            fn = "$(ARGS[2])/$(p[1])_$(p[2])_$(index[1])_$(index[2])_$(index[3]).txt"
             write(f_incomp, "$(p[1]) $(p[2])\n")
         else
             write(f_comp, "$(p[1]) $(p[2])\n")
