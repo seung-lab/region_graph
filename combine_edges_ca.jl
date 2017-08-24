@@ -14,7 +14,7 @@ function write_edges{Ts}(fout, seg1::Ts, seg2::Ts, data)
     p = minmax(seg1, seg2)
     edge = ContactEdgeBool(Dict{Array{Int32,1}, Bool}[Dict{Array{Int32,1}, Bool}(),Dict{Array{Int32,1}, Bool}(), Dict{Array{Int32,1}, Bool}()])
     for s in data
-        fn = "sem/$(seg1)_$(seg2)_$(s).txt"
+        fn = "$(s)/$(seg1)_$(seg2)_$(s).txt"
         load_voxels(fn,edge)
     end
     results = process_edge(p, edge)
