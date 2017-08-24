@@ -37,22 +37,7 @@ for j in 0:35
 end
 end
 
-nprocess = 8
-ninstance = 16
-chunksize = div(length(edges), ninstance)+1
-count = 0
+nprocess = 1024
+ninstance = 1
 idx = 0
-edges_instance = Dict{Tuple{Int,Int}, Array{String,1}}()
-for p in keys(edges)
-    edges_instance[p] = edges[p]
-    count += 1
-    if count >= chunksize
-        process_instance(edges_instance, idx)
-        idx += 1
-        count = 0
-        edges_instance = Dict{Tuple{Int,Int}, Array{String,1}}()
-    end
-end
-if length(edges_instance) > 0
-    process_instance(edges_instance, idx)
-end
+process_instance(edges, idx)
